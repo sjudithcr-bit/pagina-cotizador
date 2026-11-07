@@ -1,0 +1,2118 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recetario · Cotizador de Pasteles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.76.1/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --surface:#fbf7ec;--surface-raised:#fffdf7;--surface-sunken:#f3ead5;--cream:#ecdfbf;--border:#e2d6b8;--border-strong:#8f866e;
+  --ink:#2e2a1f;--ink-muted:#6a6150;--olive:#5a6630;--olive-strong:#434c22;--olive-soft:#e3e7cc;--on-olive:#fbf7ec;
+  --caramel:#b07a3c;--caramel-strong:#7a4818;--caramel-soft:#f5e3c8;--danger:#9e3326;--danger-soft:#f6ddd6;
+  --shadow-card:0 1px 2px rgba(46,42,31,.06),0 6px 18px rgba(46,42,31,.06);
+  --font-display:"Fraunces",Georgia,serif;--font-sans:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r-sm:8px;--r-md:14px;--r-lg:22px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --surface:#1d1e16;--surface-raised:#27291e;--surface-sunken:#16170f;--cream:#e9dcbc;--border:#3a3d2d;--border-strong:#7d7862;
+  --ink:#f2ebd8;--ink-muted:#b9b29c;--olive:#a7b46c;--olive-strong:#c3cf8a;--olive-soft:#333a1f;--on-olive:#1d1e16;
+  --caramel:#d39a58;--caramel-strong:#e0ab6e;--caramel-soft:#3a2c1b;--danger:#ec9284;--danger-soft:#3b201b;--shadow-card:0 1px 2px rgba(0,0,0,.4);
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--surface);color:var(--ink);font:400 16px/24px var(--font-sans);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-muted)}
+.small{font-size:13px;line-height:18px}
+[hidden]{display:none!important}
+
+/* Barra superior */
+.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--border)}
+.top-in{max-width:1120px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font:700 22px/1 var(--font-display);color:var(--olive-strong);margin-right:auto}
+.tabs{display:flex;gap:4px;background:var(--surface-sunken);padding:4px;border-radius:999px}
+.tab{appearance:none;border:0;background:transparent;padding:8px 16px;border-radius:999px;font-weight:600;font-size:15px;color:var(--ink-muted);cursor:pointer;min-height:40px}
+.tab[aria-selected="true"]{background:var(--olive);color:var(--on-olive)}
+.user{display:flex;align-items:center;gap:8px;font-size:13px;min-width:0}
+.user .muted{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+@media (max-width:560px){.top-in{gap:8px 12px}.tabs{order:3;width:100%}.tab{flex:1}.user .muted{max-width:140px}}
+main{max-width:1120px;margin:0 auto;padding:24px 16px 96px}
+h1{margin:0;font:600 28px/34px var(--font-display)}
+h2{margin:0;font:600 20px/26px var(--font-sans)}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+
+/* Botones */
+.btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:var(--r-md);border:2px solid transparent;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:focus-visible,.tab:focus-visible,.chipbtn:focus-visible,.card:focus-visible,.x:focus-visible{outline:none;box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--olive)}
+.btn-primary{background:var(--olive);color:var(--on-olive)}.btn-primary:hover{background:var(--olive-strong)}
+.btn-secondary{background:var(--surface-raised);color:var(--olive-strong);border-color:var(--olive)}.btn-secondary:hover{background:var(--olive-soft)}
+.btn-ghost{background:transparent;color:var(--olive-strong)}.btn-ghost:hover{background:var(--olive-soft)}
+.btn-danger{background:transparent;color:var(--danger);border-color:var(--danger)}
+.btn-sm{min-height:36px;padding:0 14px;font-size:14px;border-radius:var(--r-sm)}
+.btn[disabled]{opacity:.5;cursor:wait}
+
+/* Campos */
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field>label,.lbl{font-weight:600;font-size:14px;line-height:20px}
+.inp{display:flex;align-items:center;min-height:48px;background:var(--surface-sunken);border:1.5px solid var(--border-strong);border-radius:var(--r-sm);overflow:hidden}
+.inp:focus-within{border-color:var(--olive);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--olive)}
+.inp input,.inp select,.inp textarea{flex:1;min-width:0;height:46px;border:0;background:transparent;padding:0 12px;outline:none;font-size:16px;font-variant-numeric:tabular-nums}
+.inp textarea{height:auto;min-height:70px;padding:10px 12px;resize:vertical}
+.affix{padding:0 10px;color:var(--ink-muted);font-size:14px;font-weight:600;white-space:nowrap}
+.inp.warn{border-color:var(--caramel)}
+.inp.err{border-color:var(--danger)}
+
+/* Chips */
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;font:600 13px/1 var(--font-sans);white-space:nowrap}
+.chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.c-bizcocho{background:var(--olive-soft);color:var(--olive-strong)}
+.c-betun{background:var(--cream);color:#2e2a1f}
+.c-relleno{background:var(--caramel-soft);color:var(--caramel-strong)}
+.c-topper{background:var(--olive);color:var(--on-olive)}
+.c-decoracion{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--border-strong)}
+.c-todas{background:var(--surface-sunken);color:var(--ink)}
+.c-todas::before{display:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chipbtn{appearance:none;border:0;background:none;padding:2px;border-radius:999px;cursor:pointer}
+.chipbtn[aria-pressed="false"] .chip{opacity:.5}
+.chipbtn[aria-pressed="true"] .chip{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--olive);opacity:1}
+
+/* Tarjetas */
+.panel{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-card);padding:20px}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.card{appearance:none;text-align:left;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-card);padding:16px;display:flex;flex-direction:column;gap:12px;cursor:pointer;font:inherit;color:inherit}
+.card:hover{border-color:var(--olive)}
+.card-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.card h3{margin:0;font:600 19px/25px var(--font-sans)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface-sunken);border-radius:var(--r-sm);padding:8px 10px}
+.stat b{display:block;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;line-height:16px;color:var(--ink-muted)}
+.empty{padding:40px 20px;text-align:center;border:1.5px dashed var(--border-strong);border-radius:var(--r-lg);color:var(--ink-muted)}
+
+/* Avisos */
+.note{display:flex;gap:8px;padding:12px 16px;border-radius:var(--r-md);font-size:14px;line-height:20px}
+.note b{white-space:nowrap}
+.note-ok{background:var(--olive-soft)}.note-ok b{color:var(--olive-strong)}
+.note-warn{background:var(--caramel-soft)}.note-warn b{color:var(--caramel-strong)}
+.note-err{background:var(--danger-soft)}.note-err b{color:var(--danger)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:20;width:max-content;box-shadow:var(--shadow-card);max-width:calc(100% - 32px)}
+
+/* Editor */
+.ed{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+.meta{display:grid;grid-template-columns:2fr 1fr 1.3fr;gap:16px}
+.rows-head,.row{display:grid;grid-template-columns:minmax(150px,2fr) 84px 76px 104px 112px 96px 40px;gap:8px;align-items:center}
+.rows-head{font:600 12px/16px var(--font-sans);color:var(--ink-muted);padding:0 10px 6px}
+.row{padding:8px 10px;border-radius:var(--r-sm)}
+.row:nth-child(even){background:var(--surface-sunken)}
+.row .inp{min-height:40px;background:var(--surface-raised)}
+.row .inp input,.row .inp select{height:38px;padding:0 8px}
+.row .affix{padding:0 6px;font-size:13px}
+.cost{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.cost small{display:block;font-weight:500;font-size:11px;line-height:14px}
+.x{appearance:none;width:40px;height:40px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-muted);font-size:20px;cursor:pointer}
+.x:hover{background:var(--danger-soft);color:var(--danger)}
+.tag-new{font-size:11px;font-weight:700;color:var(--olive-strong);background:var(--olive-soft);border-radius:999px;padding:1px 8px;margin-top:3px;display:inline-block}
+.side{position:sticky;top:88px;display:flex;flex-direction:column;gap:12px}
+.pieza{margin-top:24px;padding:16px;border-radius:var(--r-md);background:var(--surface-sunken);display:flex;flex-direction:column;gap:14px}
+.pieza .inp{background:var(--surface-raised)}
+.pieza-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.check{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-weight:600}
+.check input{width:22px;height:22px;accent-color:var(--olive);margin:1px 0 0;flex:0 0 22px}
+.check small{display:block;font-weight:400;color:var(--ink-muted);font-size:13px;line-height:18px}
+.sug{font-size:12px;line-height:16px;color:var(--ink-muted)}
+.precios{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;line-height:18px}
+.precios b{font-variant-numeric:tabular-nums}
+@media (max-width:860px){.pieza-grid{grid-template-columns:minmax(0,1fr)}}
+.card-foto{padding:0;overflow:hidden;gap:0}
+.card-foto .card-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.cfoto{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--surface-sunken)}
+.ph{display:grid;place-items:center;background:var(--cream);color:var(--olive-strong);font:700 56px/1 var(--font-display)}
+.pz-top{display:grid;grid-template-columns:168px minmax(0,1fr);gap:20px;align-items:start}
+.foto-box{display:flex;flex-direction:column;gap:6px}
+.foto-drop{display:block;width:168px;height:168px;border-radius:var(--r-md);overflow:hidden;cursor:pointer;background:var(--surface-sunken);border:1.5px dashed var(--border-strong)}
+.foto-drop:hover{border-color:var(--olive)}
+.foto-drop img{width:100%;height:100%;object-fit:cover;display:block}
+.foto-ph{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--olive-strong)}
+.foto-ph small{color:var(--ink-muted);font-size:12px}
+.foto-acc{display:flex;gap:4px}
+.foto-acc .btn{flex:1;padding:0 8px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg button{appearance:none;text-align:left;background:var(--surface-raised);border:1.5px solid var(--border-strong);border-radius:var(--r-md);padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:64px}
+.seg button small{color:var(--ink-muted);font-size:13px;line-height:18px}
+.seg button[aria-checked="true"]{background:var(--olive-soft);border:2px solid var(--olive)}
+.seg button:focus-visible{outline:none;box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--olive)}
+.cada{min-height:48px;display:flex;align-items:center;font:700 22px/1 var(--font-display);color:var(--olive-strong);font-variant-numeric:tabular-nums}
+.t-short{display:none}
+@media (max-width:1360px){.t-long{display:none}.t-short{display:inline}}
+@media (max-width:560px){.t-long{display:none}.t-short{display:inline}.tab{padding:8px 10px}
+  .pz-top{grid-template-columns:minmax(0,1fr)}.foto-drop{width:100%;height:200px}.seg{grid-template-columns:minmax(0,1fr)}}
+.modal-fondo{position:fixed;inset:0;z-index:30;background:rgba(29,30,22,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{width:100%;max-width:520px;max-height:calc(100vh - 32px);overflow:auto;display:flex;flex-direction:column;gap:16px}
+.modal h2{font:600 24px/30px var(--font-display)}
+.modal-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.modal-acc{display:flex;justify-content:flex-end;gap:8px}
+@media (max-width:560px){.modal-grid{grid-template-columns:minmax(0,1fr)}}
+/* Cotizador */
+.steps{display:flex;gap:4px;list-style:none;margin:0;padding:0 0 4px;overflow-x:auto;scrollbar-width:thin}
+.step{appearance:none;border:0;background:transparent;display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:999px;font:600 14px/20px var(--font-sans);color:var(--ink-muted);white-space:nowrap;cursor:pointer;min-height:40px}
+.step i{font-style:normal;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;box-shadow:inset 0 0 0 1.5px var(--border-strong)}
+.step.is-done{color:var(--olive-strong)}.step.is-done i{background:var(--olive-soft);box-shadow:none}
+.step.is-current{background:var(--olive);color:var(--on-olive)}.step.is-current i{background:var(--on-olive);color:var(--olive-strong);box-shadow:none}
+.step:focus-visible,.opt:focus-visible,.cot-item:focus-visible,.qty button:focus-visible{outline:none;box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--olive)}
+.pie-pasos{display:flex;justify-content:space-between;gap:8px;margin-top:16px;flex-wrap:wrap}
+.row-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.opts,.sug-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.opt{position:relative;text-align:left;appearance:none;font:inherit;color:var(--ink);background:var(--surface-raised);border:1.5px solid var(--border-strong);border-radius:var(--r-md);padding:12px 40px 12px 14px;min-height:76px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.opt:hover{border-color:var(--olive)}
+.opt-name{font-weight:600}
+.opt-cost{font-size:13px;line-height:18px;color:var(--ink-muted);font-variant-numeric:tabular-nums}
+.opt-meta{font-size:12px;line-height:16px;color:var(--ink-muted)}
+.opt[aria-pressed="true"]{background:var(--olive-soft);border:2px solid var(--olive)}
+.opt[aria-pressed="true"] .opt-cost{color:var(--olive-strong);font-weight:600}
+.opt[aria-pressed="true"]::after{content:"✓";position:absolute;top:10px;right:12px;width:22px;height:22px;border-radius:50%;background:var(--olive);color:var(--on-olive);font-size:13px;font-weight:700;display:grid;place-items:center}
+.qty{display:inline-flex;align-items:center;border:1.5px solid var(--border-strong);border-radius:var(--r-md);background:var(--surface-raised);overflow:hidden;flex:0 0 auto}
+.qty button{appearance:none;width:44px;height:44px;border:0;background:transparent;color:var(--olive-strong);font:600 22px/1 var(--font-sans);cursor:pointer}
+.qty button:hover{background:var(--olive-soft)}
+.qty output{min-width:36px;text-align:center;font:600 17px/1 var(--font-sans);font-variant-numeric:tabular-nums}
+.pisos{display:flex;flex-direction:column;gap:8px}
+.piso{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:var(--r-md);background:var(--surface-sunken)}
+.piso .inp{background:var(--surface-raised)}
+.piso-n{font-weight:600;min-width:96px}
+.piezas-sel{display:flex;flex-direction:column;gap:10px}
+.pz-sel{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--surface-raised)}
+.pz-sel.on{border:2px solid var(--olive);background:var(--olive-soft)}
+.pz-foto{width:64px;height:64px;border-radius:var(--r-sm);object-fit:cover;display:block}
+.pz-foto.ph{font-size:28px}
+.pz-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.seg-sm{grid-template-columns:auto auto;justify-content:start;gap:6px}
+.seg-sm button{min-height:34px;padding:4px 12px;font-size:13px;font-weight:600}
+.msg{white-space:pre-wrap;font:400 14px/21px var(--font-sans);background:var(--surface-sunken);border-radius:var(--r-md);padding:14px 16px;margin:0}
+.sum{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-card);overflow:hidden}
+.sum-head{padding:16px;border-bottom:1px solid var(--border)}
+.sum-head h3{margin:0;font:600 22px/28px var(--font-display)}
+.lns{list-style:none;margin:0;padding:4px 16px}
+.ln{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--border)}
+.ln:last-child{border-bottom:0}
+.ln-what{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ln-what .chip{align-self:flex-start}
+.ln-what small{display:block;font-size:12px;line-height:16px;color:var(--ink-muted)}
+.sum-sub,.sum-dep,.sum-foot{display:flex;justify-content:space-between;padding:10px 16px;background:var(--surface-sunken)}
+.sum-margin{display:flex;justify-content:space-between;padding:10px 16px;background:var(--caramel-soft);color:var(--caramel-strong);font-weight:600}
+.sum-total{padding:14px 16px}
+.sum-total small{display:block;font-size:13px;color:var(--ink-muted)}
+.price{font:700 34px/38px var(--font-display);color:var(--olive-strong);font-variant-numeric:tabular-nums}
+.sum-dep{background:var(--olive-soft)}
+.sum-foot{font-size:13px;color:var(--ink-muted);border-top:1px solid var(--border)}
+.cot-list{display:flex;flex-direction:column;gap:10px}
+.cot-item{appearance:none;font:inherit;color:inherit;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-md);background:var(--surface-raised);border:1px solid var(--border);box-shadow:var(--shadow-card);cursor:pointer}
+.cot-item:hover{border-color:var(--olive)}
+.cot-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cot-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.est-borrador{background:var(--surface-sunken);color:var(--ink)}
+.est-enviada{background:var(--caramel-soft);color:var(--caramel-strong)}
+.est-aceptada{background:var(--olive);color:var(--on-olive)}
+.est-rechazada,.est-vencida{background:var(--danger-soft);color:var(--danger)}
+.molde-row{display:grid;grid-template-columns:90px minmax(0,1fr) auto minmax(0,1fr) auto 40px;gap:8px;align-items:center}
+.molde-row .inp{min-height:40px}.molde-row .inp input{height:38px}
+.refbox{display:flex;flex-direction:column;gap:6px;margin-bottom:24px;padding:14px 16px;border-radius:var(--r-md);background:var(--surface-sunken)}
+.ref-frase{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:600}
+.ref-n{width:96px;background:var(--surface-raised);min-height:40px}.ref-n input{height:38px}
+.det{width:100%;border-collapse:collapse;font-size:14px}.det th{font:600 12px/16px var(--font-sans);color:var(--ink-muted);text-align:left;padding:0 6px 6px}.det td{padding:7px 6px;border-top:1px solid var(--border);vertical-align:top}.det td:nth-child(2){white-space:nowrap}
+.pz-foto.ph{display:grid}
+.res-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.subnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.subtab{appearance:none;border:1.5px solid var(--border-strong);background:var(--surface-raised);color:var(--ink);border-radius:999px;padding:6px 14px;font:600 14px/20px var(--font-sans);cursor:pointer}
+.subtab[aria-current="true"]{background:var(--olive-soft);border-color:var(--olive);color:var(--olive-strong)}
+.ped{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 14px;border-radius:var(--r-md);background:var(--surface-raised);border:1px solid var(--border);box-shadow:var(--shadow-card)}
+.ped-fecha{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--olive-soft);color:var(--olive-strong);border-radius:var(--r-sm);padding:8px 4px;text-align:center}
+.ped-fecha b{font:700 17px/20px var(--font-display)}.ped-fecha span{font-size:12px}
+.ped-fecha.tarde{background:var(--danger-soft);color:var(--danger)}
+.ped-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ped-acc{display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:190px}
+.ped-acc .inp{min-height:40px}.ped-acc select{height:38px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.cal-dia{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--r-md);padding:10px;display:flex;flex-direction:column;gap:6px;min-height:140px}
+.cal-dia h3{margin:0 0 2px;font:600 13px/18px var(--font-sans);color:var(--ink-muted)}
+.cal-dia h3::first-letter{text-transform:uppercase}
+.cal-dia.hoy{border:2px solid var(--olive)}.cal-dia.hoy h3{color:var(--olive-strong)}
+.tarea{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:18px;padding:6px 8px;border-radius:var(--r-sm);background:var(--surface-sunken);cursor:pointer}
+.tarea input{width:18px;height:18px;accent-color:var(--olive);margin:0;flex:0 0 18px}
+.tarea small{display:block;color:var(--ink-muted);font-size:12px;line-height:16px}
+.tarea.et-horneado{background:var(--olive-soft)}.tarea.et-preparacion{background:var(--caramel-soft)}.tarea.et-entrega{box-shadow:inset 3px 0 0 var(--olive)}
+.tarea.hecha{opacity:.55}.tarea.hecha b{text-decoration:line-through}
+@media (max-width:1100px){.cal{grid-template-columns:minmax(0,1fr)}.cal-dia{min-height:0}}
+@media (max-width:700px){.ped{grid-template-columns:60px minmax(0,1fr)}.ped-acc{grid-column:1/-1;min-width:0}.res-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.aviso-cot{margin-bottom:16px}.aviso-cot a{color:var(--caramel-strong);font-weight:700}
+.ins-nombre{appearance:none;border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.ins-edit{font-size:12px;font-weight:600;color:var(--olive-strong);text-decoration:underline;margin-left:4px}
+.ins-meta{display:block;font-size:12px;line-height:16px;color:var(--ink-muted);margin:2px 0 4px}
+.cfg{display:flex;flex-direction:column;gap:16px;max-width:860px}
+.cfg h2{margin-bottom:14px}
+.cfg-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cfg-moldes{display:flex;flex-wrap:wrap;gap:8px}
+@media (max-width:560px){.cfg-grid{grid-template-columns:minmax(0,1fr)}}
+.meta.meta-cli{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+@media (max-width:560px){.meta.meta-cli{grid-template-columns:minmax(0,1fr)}}
+.barra-precio{display:none}
+@media (max-width:860px){
+  .barra-precio{display:flex;position:fixed;left:12px;right:12px;bottom:12px;z-index:15;justify-content:space-between;align-items:center;gap:8px;appearance:none;border:0;cursor:pointer;
+    background:var(--olive);color:var(--on-olive);border-radius:var(--r-md);padding:10px 16px;box-shadow:0 6px 18px rgba(0,0,0,.18);font:600 13px/18px var(--font-sans)}
+  .barra-precio b{font:700 22px/1 var(--font-display)}
+  .pie-pasos>span{display:none}.pie-pasos .btn{flex:1 1 auto}
+}
+@media (max-width:860px){.pz-sel{grid-template-columns:52px minmax(0,1fr)}.pz-sel .qty,.pz-sel>.btn{grid-column:2;justify-self:start}.pz-foto{width:52px;height:52px}}
+@media (max-width:560px){.tabs{overflow-x:auto;justify-content:flex-start}.tab{flex:0 0 auto}.cot-item{flex-direction:column;align-items:flex-start}.cot-side{flex-direction:row;align-items:center}
+  .molde-row{grid-template-columns:70px minmax(0,1fr) auto minmax(0,1fr) 40px}.molde-row>.small{display:none}}
+.big{font:700 34px/38px var(--font-display);color:var(--olive-strong);font-variant-numeric:tabular-nums}
+
+/* Insumos */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font:600 12px/16px var(--font-sans);color:var(--ink-muted);text-align:left;padding:0 8px 8px}
+.tbl td{padding:8px;border-top:1px solid var(--border);vertical-align:middle}
+.tbl .inp{min-height:40px;background:var(--surface-raised)}
+.tbl .inp input{height:38px;padding:0 8px}
+.pill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px}
+.pill-warn{background:var(--caramel-soft);color:var(--caramel-strong)}
+.pill-ok{background:var(--olive-soft);color:var(--olive-strong)}
+
+/* Login */
+.login{max-width:400px;margin:8vh auto 0}
+.login .brandbig{font:700 40px/44px var(--font-display);color:var(--olive-strong);margin:0 0 6px}
+
+@media (max-width:860px){
+  .ed{grid-template-columns:minmax(0,1fr)}
+  .side{position:static}
+  .meta{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .meta .f-nombre{grid-column:1/-1}
+  .rows-head{display:none}
+  .row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"n n x" "c u k" "p q t";padding:12px 10px}
+  .row>:nth-child(1){grid-area:n}.row>:nth-child(2){grid-area:c}.row>:nth-child(3){grid-area:u}
+  .row>:nth-child(4){grid-area:p}.row>:nth-child(5){grid-area:q}.row>:nth-child(6){grid-area:t;align-self:center}
+  .row>:nth-child(7){grid-area:x;justify-self:end}
+  .row .mlabel,.tbl .mlabel{display:block}
+  .tbl,.tbl tbody{display:block}
+  .tbl thead{display:none}
+  .tbl tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:12px 0;border-top:1px solid var(--border)}
+  .tbl td{border:0;padding:0}
+  .tbl td.t-name{grid-column:1/-1}
+}
+.mlabel{display:none;font-size:11px;font-weight:600;color:var(--ink-muted);line-height:14px;margin-bottom:2px}
+</style>
+</head>
+<body>
+<header class="top" id="topbar" hidden>
+  <div class="top-in">
+    <div class="brand">Recetario</div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-view="cotizaciones" aria-selected="true"><span class="t-long">Cotizaciones</span><span class="t-short">Cotizar</span></button>
+      <button class="tab" role="tab" data-view="pedidos" aria-selected="false">Pedidos</button>
+      <button class="tab" role="tab" data-view="calendario" aria-selected="false">Calendario</button>
+      <button class="tab" role="tab" data-view="clientes" aria-selected="false">Clientes</button>
+      <button class="tab" role="tab" data-view="catalogo" aria-selected="false">Catálogo</button>
+    </nav>
+    <div class="user"><span class="muted" id="userEmail"></span><button class="btn btn-ghost btn-sm" id="btnConfig" aria-label="Configuración">⚙ <span class="t-long">Configuración</span></button><button class="btn btn-ghost btn-sm" id="btnSalir">Salir</button></div>
+  </div>
+</header>
+<main id="app"></main>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* ===== Configuración ===== */
+const SUPABASE_URL = 'https://niwrligrgmsjpupcukck.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_BjkHFGNoGNxXcaCmTCHIXA_RKvkbHdv'; // llave pública; la seguridad la dan las reglas RLS
+const DEMO = new URLSearchParams(location.search).has('demo');
+
+const TIPOS = [
+  { id:'bizcocho', label:'Bizcocho' }, { id:'relleno', label:'Relleno' }, { id:'betun', label:'Betún' },
+  { id:'topper', label:'Topper' }, { id:'decoracion', label:'Decoración' }
+];
+const UNIDADES_BASE = ['g','kg','ml','l','pz'];
+const UNIDAD_BASE_INFO = { g:[1,'g'], kg:[1000,'g'], ml:[1,'ml'], l:[1000,'ml'], lt:[1000,'ml'], pz:[1,'pz'] };
+function opcionesUnidad(sel) {
+  const lista = [...UNIDADES_BASE, ...S.unidades.map(u => u.clave)];
+  if (sel && !lista.includes(sel)) lista.push(sel);
+  return lista.map(u => `<option value="${esc(u)}" ${u === sel ? 'selected' : ''}>${esc(u)}</option>`).join('')
+    + '<option disabled>──────</option><option value="__nueva">+ Nueva unidad…</option>';
+}
+const TIPOS_RECETA = TIPOS.slice(0, 3), TIPOS_PIEZA = TIPOS.slice(3);
+const ES_PIEZA = t => t === 'topper' || t === 'decoracion';
+let CFG = { pct_renta: 25, pct_deposito: 100, pct_venta_pieza: 20, dias_devolucion: 3, redondeo: 10 };
+function sugeridos(costo) {
+  const red = Number(CFG.redondeo) || 10;
+  return {
+    renta: costo ? Math.max(red, Math.round(costo * CFG.pct_renta / 100 / red) * red) : 0,
+    deposito: Math.ceil(+(costo * CFG.pct_deposito / 100 / red).toFixed(6)) * red,
+    venta: Math.ceil(+(costo * (1 + CFG.pct_venta_pieza / 100) / red).toFixed(6)) * red
+  };
+}
+const tipoLabel = id => (TIPOS.find(t => t.id === id) || { label:id }).label;
+
+/* ===== Utilidades ===== */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const money = n => n == null || isNaN(n) ? '—' : '$' + Number(n).toLocaleString('es-MX', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; };
+const norm = s => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+function baseUnidad(u) {
+  const k = String(u || '').trim().toLowerCase();
+  if (UNIDAD_BASE_INFO[k]) return UNIDAD_BASE_INFO[k];
+  const x = S.unidades.find(z => z.clave === k);
+  return x && x.unidad_base ? [Number(x.equivale), x.unidad_base] : [1, '~' + k];
+}
+function convertir(c, de, a) {
+  if (String(de || '').trim().toLowerCase() === String(a || '').trim().toLowerCase()) return c;
+  const A = baseUnidad(de), B = baseUnidad(a);
+  return A[1] === B[1] ? c * A[0] / B[0] : null;
+}
+let toastTimer;
+function toast(kind, title, msg) {
+  const t = $('#toast');
+  t.className = `toast note note-${kind}`;
+  t.innerHTML = `<b>${esc(title)}</b><span>${esc(msg || '')}</span>`;
+  t.hidden = false; clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.hidden = true, kind === 'err' ? 7000 : 3500);
+}
+
+/* ===== Capa de datos: Supabase real ===== */
+function supabaseApi() {
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const ok = ({ data, error }) => { if (error) throw new Error(error.message); return data; };
+  return {
+    async session() { const { data } = await sb.auth.getSession(); return data.session?.user || null; },
+    async signIn(email, password) { const { data, error } = await sb.auth.signInWithPassword({ email, password }); if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos' : error.message); return data.user; },
+    async signOut() { await sb.auth.signOut(); },
+    async recetas() { return ok(await sb.from('v_costo_recetas').select('*').order('tipo').order('nombre')); },
+    async receta(id) {
+      const r = ok(await sb.from('recetas').select('*').eq('id', id).single());
+      const lineas = ok(await sb.from('receta_ingredientes').select('id, ingrediente_id, cantidad, unidad, notas').eq('receta_id', id).order('creado_en'));
+      return { ...r, lineas };
+    },
+    async ingredientes() { return ok(await sb.from('ingredientes').select('*').neq('estado', 'inactivo').order('nombre')); },
+    async config() { return ok(await sb.from('configuracion').select('*').maybeSingle()); },
+    async unidades() { return ok(await sb.from('unidades').select('*').order('clave')); },
+    async crearUnidad(u) { return ok(await sb.from('unidades').insert(u).select().single()); },
+    async crearIngrediente(i) { return ok(await sb.from('ingredientes').insert(i).select().single()); },
+    async actualizarInsumo(id, datos) { return ok(await sb.from('ingredientes').update(datos).eq('id', id).select().single()); },
+    async guardarConfig(datos) {
+      const { data: { user } } = await sb.auth.getUser();
+      return ok(await sb.from('configuracion').upsert({ usuario_id: user.id, ...datos, actualizado_en: new Date().toISOString() }, { onConflict: 'usuario_id' }).select().single());
+    },
+    async actualizarPrecio(id, precio, presentacion, unidad) {
+      const r = ok(await sb.from('ingredientes').update({ precio_actual: precio, cantidad_presentacion: presentacion, unidad, estado: 'activo' }).eq('id', id).select().single());
+      ok(await sb.from('historial_precios').insert({ ingrediente_id: id, cantidad: presentacion, unidad, precio_total: precio, precio_unitario: presentacion ? +(precio / presentacion).toFixed(6) : null, notas: 'Capturado en Recetario' }));
+      return r;
+    },
+    async guardarReceta(rec, lineas, quitar) {
+      const datos = { nombre: rec.nombre, tipo: rec.tipo, porciones_base: rec.porciones_base, rendimiento_cantidad: rec.rendimiento_cantidad, rendimiento_unidad: rec.rendimiento_unidad, descripcion: rec.descripcion,
+        se_renta: rec.se_renta, precio_renta: rec.precio_renta, deposito: rec.deposito, precio_venta: rec.precio_venta, forma_obtencion: rec.forma_obtencion,
+        ref_diametro_cm: rec.ref_diametro_cm ?? null, ref_panes: rec.ref_panes ?? null };
+      const r = rec.id ? ok(await sb.from('recetas').update(datos).eq('id', rec.id).select().single())
+                       : ok(await sb.from('recetas').insert(datos).select().single());
+      const filas = lineas.map(l => ({ ...(l.id ? { id: l.id } : {}), receta_id: r.id, nombre_receta: r.nombre, ingrediente_id: l.ingrediente_id, cantidad: l.cantidad, unidad: l.unidad }));
+      const existentes = filas.filter(f => f.id), nuevas = filas.filter(f => !f.id);
+      if (existentes.length) ok(await sb.from('receta_ingredientes').upsert(existentes));
+      if (nuevas.length) ok(await sb.from('receta_ingredientes').insert(nuevas));
+      if (quitar.length) ok(await sb.from('receta_ingredientes').delete().in('id', quitar));
+      return r;
+    },
+    async borrarReceta(id) { ok(await sb.from('recetas').delete().eq('id', id)); },
+    async subirFoto(recetaId, blob) {
+      const { data: { user } } = await sb.auth.getUser();
+      const path = `${user.id}/${recetaId}-${Date.now()}.jpg`;
+      ok(await sb.storage.from('fotos-piezas').upload(path, blob, { contentType: 'image/jpeg', upsert: true }));
+      return path;
+    },
+    async setFoto(recetaId, path) { ok(await sb.from('recetas').update({ foto_path: path }).eq('id', recetaId)); },
+    async borrarFoto(path) { ok(await sb.storage.from('fotos-piezas').remove([path])); },
+    async fotoUrls(paths) {
+      const data = ok(await sb.storage.from('fotos-piezas').createSignedUrls(paths, 60 * 60 * 6));
+      return Object.fromEntries(data.filter(d => d.signedUrl).map(d => [d.path, d.signedUrl]));
+    },
+    async clientes() { return ok(await sb.from('clientes').select('*').order('nombre')); },
+    async crearCliente(c) { return ok(await sb.from('clientes').insert(c).select().single()); },
+    async actualizarCliente(id, c) { return ok(await sb.from('clientes').update(c).eq('id', id).select().single()); },
+    async borrarCliente(id) { ok(await sb.from('clientes').delete().eq('id', id)); },
+    async pedidos() { return ok(await sb.from('pedidos').select('*, clientes(nombre)').order('fecha_entrega')); },
+    async crearPedido(p) { return ok(await sb.from('pedidos').insert(p).select().single()); },
+    async actualizarPedido(id, d) { return ok(await sb.from('pedidos').update(d).eq('id', id).select().single()); },
+    async tareas(desde, hasta) { return ok(await sb.from('plan_produccion').select('*, pedidos(id, producto, estado, hora_entrega, cotizacion_id, clientes(nombre))').gte('fecha_programada', desde).lte('fecha_programada', hasta).order('fecha_programada')); },
+    async estadoTarea(id, estado) { ok(await sb.from('plan_produccion').update({ estado }).eq('id', id)); },
+    async detalleDe(cotIds) { return ok(await sb.from('cotizacion_detalle').select('*').in('cotizacion_id', cotIds)); },
+    async lineasDe(recIds) { return ok(await sb.from('receta_ingredientes').select('receta_id, ingrediente_id, cantidad, unidad').in('receta_id', recIds)); },
+    async moldes() { return ok(await sb.from('tamanos_molde').select('*').order('diametro_cm')); },
+    async guardarMolde(m) { return m.id ? ok(await sb.from('tamanos_molde').update({ porciones_min: m.porciones_min, porciones_max: m.porciones_max }).eq('id', m.id).select().single())
+                                        : ok(await sb.from('tamanos_molde').insert(m).select().single()); },
+    async borrarMolde(id) { ok(await sb.from('tamanos_molde').delete().eq('id', id)); },
+    async cotizaciones() { return ok(await sb.from('cotizaciones').select('id, folio, producto, porciones, precio_cotizado, estado, fecha_cotizacion, creado_en, cliente_id, clientes(nombre)').order('creado_en', { ascending: false })); },
+    async cotizacion(id) {
+      const c = ok(await sb.from('cotizaciones').select('*').eq('id', id).single());
+      c.detalle = ok(await sb.from('cotizacion_detalle').select('*').eq('cotizacion_id', id).order('creado_en'));
+      return c;
+    },
+    async guardarCotizacion(cot, lineas) {
+      const { id, ...datos } = cot;
+      const c = id ? ok(await sb.from('cotizaciones').update(datos).eq('id', id).select().single())
+                   : ok(await sb.from('cotizaciones').insert(datos).select().single());
+      if (id) ok(await sb.from('cotizacion_detalle').delete().eq('cotizacion_id', c.id));
+      if (lineas.length) ok(await sb.from('cotizacion_detalle').insert(lineas.map(l => ({ ...l, cotizacion_id: c.id }))));
+      return c;
+    },
+    async estadoCotizacion(id, estado) { ok(await sb.from('cotizaciones').update({ estado }).eq('id', id)); },
+    async borrarCotizacion(id) { ok(await sb.from('cotizaciones').delete().eq('id', id)); },
+    async empaques() { return ok(await sb.from('empaques').select('*').order('nombre')); },
+    async guardarEmpaque(e) { const { id, ...d } = e; return id ? ok(await sb.from('empaques').update(d).eq('id', id).select().single()) : ok(await sb.from('empaques').insert(d).select().single()); },
+    async borrarEmpaque(id) { ok(await sb.from('empaques').delete().eq('id', id)); }
+  };
+}
+
+/* ===== Capa de datos: modo demostración (?demo) ===== */
+function demoApi() {
+  let n = 100; const id = () => 'demo-' + (n++);
+  const ing = [
+    ['Harina','g',23,1000],['Azúcar Estandar','g',0,1000],['Mantequilla','g',0,1000],['Polvo para hornear Rexal','g',28,50],
+    ['Huevo','pz',0,1],['Aceite Cristal','g',0,1000],['Vainilla Molina','g',75,500],['Leche','g',50,1000]
+  ].map(([nombre, unidad, precio_actual, cantidad_presentacion]) => ({ id: id(), nombre, unidad, precio_actual, cantidad_presentacion, tipo:'Ingrediente', estado:'pendiente_revision', proveedor:null }));
+  const by = nm => ing.find(i => i.nombre === nm).id;
+  ing.push({ id: id(), nombre:'Queso crema philadelphia', unidad:'g', precio_actual:45, cantidad_presentacion:90, tipo:'Ingrediente', estado:'activo' },
+           { id: id(), nombre:'Base acrílico 20 cm', unidad:'pz', precio_actual:250, cantidad_presentacion:1, tipo:'Topper', estado:'activo' },
+           { id: id(), nombre:'Flores naturales', unidad:'pz', precio_actual:120, cantidad_presentacion:12, tipo:'Decoracion', estado:'activo' });
+  ing.forEach(i => { if (!i.precio_actual) i.precio_actual = { 'Azúcar Estandar': 15, Mantequilla: 250, Huevo: 5, 'Aceite Cristal': 80 }[i.nombre] || i.precio_actual; });
+  const R = (o) => ({ rendimiento_cantidad:null, rendimiento_unidad:null, descripcion:'', se_renta:false, precio_renta:null, deposito:null, precio_venta:null, foto_path:null, forma_obtencion:null, ref_diametro_cm:null, ref_panes:null, estado:'activo', ...o });
+  const recs = [R({ id: 'demo-r1', nombre:'Bizcocho de Vainilla', tipo:'bizcocho', porciones_base:10, ref_diametro_cm:20, ref_panes:2 }),
+    R({ id: 'demo-r2', nombre:'Relleno de queso crema', tipo:'relleno', porciones_base:20 }),
+    R({ id: 'demo-r3', nombre:'Betún de mantequilla', tipo:'betun', porciones_base:20, ref_diametro_cm:20, ref_panes:2 }),
+    R({ id: 'demo-r4', nombre:'Base acrílico 20 cm', tipo:'topper', porciones_base:1, se_renta:true, forma_obtencion:'comprada' }),
+    R({ id: 'demo-r5', nombre:'Flores naturales', tipo:'decoracion', porciones_base:1, forma_obtencion:'comprada' })];
+  const clis = [{ id:'demo-c1', nombre:'Fabiola Piña', telefono:'3121234567' }, { id:'demo-c2', nombre:'Brianda Del Toro', telefono:null }];
+  const molds = [[15,8,10],[20,15,20],[25,25,30],[30,40,50]].map(([d, a, b]) => ({ id: id(), diametro_cm: d, porciones_min: a, porciones_max: b }));
+  const cots = [], dets = [], peds = [], tars = [];
+  const emps = [{ id: 'demo-e1', nombre: 'Caja 25 cm con ventana', descripcion: 'Caja blanca 30×30×25', precio: 65, foto_path: null, estado: 'activo' }, { id: 'demo-e2', nombre: 'Base de cartón 30 cm', descripcion: 'Dorada', precio: 18, foto_path: null, estado: 'activo' }];
+  const demoCfg = { tarifa_mano_obra_hora: 70, margen_default: 40, pct_indirectos: 10, redondeo: 10, pct_renta: 25, pct_deposito: 100, pct_venta_pieza: 20, dias_devolucion: 3 };
+  const blobs = {}; const unis = [];
+  let lineas = [['Azúcar Estandar',250,'g'],['Aceite Cristal',75,'g'],['Mantequilla',175,'g'],['Huevo',4,'pz'],['Vainilla Molina',5,'g'],['Harina',250,'g'],['Polvo para hornear Rexal',5,'g'],['Leche',60,'g']]
+    .map(([nm, cantidad, unidad]) => ({ id: id(), receta_id:'demo-r1', ingrediente_id: by(nm), cantidad, unidad }));
+  lineas.push({ id: id(), receta_id:'demo-r2', ingrediente_id: by('Queso crema philadelphia'), cantidad: 180, unidad:'g' },
+              { id: id(), receta_id:'demo-r3', ingrediente_id: by('Mantequilla'), cantidad: 250, unidad:'g' }, { id: id(), receta_id:'demo-r3', ingrediente_id: by('Azúcar Estandar'), cantidad: 400, unidad:'g' },
+              { id: id(), receta_id:'demo-r4', ingrediente_id: by('Base acrílico 20 cm'), cantidad: 1, unidad:'pz' }, { id: id(), receta_id:'demo-r5', ingrediente_id: by('Flores naturales'), cantidad: 1, unidad:'pz' });
+  const wait = v => new Promise(r => setTimeout(() => r(structuredClone(v)), 120));
+  const vista = () => recs.map(r => {
+    const ls = lineas.filter(l => l.receta_id === r.id); let costo = 0, sinPrecio = 0, incomp = 0;
+    ls.forEach(l => { const i = ing.find(x => x.id === l.ingrediente_id); const c = convertir(l.cantidad, l.unidad, i.unidad);
+      if (c == null) incomp++; if (!i.precio_actual || !i.cantidad_presentacion) sinPrecio++;
+      if (c != null && i.cantidad_presentacion) costo += c * i.precio_actual / i.cantidad_presentacion; });
+    return { receta_id: r.id, nombre: r.nombre, tipo: r.tipo, porciones_base: r.porciones_base, rendimiento_cantidad: r.rendimiento_cantidad, rendimiento_unidad: r.rendimiento_unidad,
+      num_ingredientes: ls.length, costo_tanda: +costo.toFixed(2), costo_porcion: +(costo / r.porciones_base).toFixed(2), ingredientes_sin_precio: sinPrecio, unidades_incompatibles: incomp,
+      se_renta: r.se_renta, precio_renta: r.precio_renta ?? sugeridos(costo).renta, deposito: r.deposito ?? sugeridos(costo).deposito, precio_venta: r.precio_venta ?? sugeridos(costo).venta, dias_devolucion: CFG.dias_devolucion, foto_path: r.foto_path, forma_obtencion: r.forma_obtencion, ref_diametro_cm: r.ref_diametro_cm, ref_panes: r.ref_panes, estado: r.estado || 'activo' };
+  });
+  let user = null;
+  return {
+    async session() { return user; },
+    async signIn(email) { user = { email: email || 'demo@recetario' }; return user; },
+    async signOut() { user = null; },
+    async recetas() { return wait(vista()); },
+    async receta(rid) { return wait({ ...recs.find(r => r.id === rid), lineas: lineas.filter(l => l.receta_id === rid) }); },
+    async ingredientes() { return wait(ing.filter(i => i.estado !== 'inactivo').sort((a, b) => a.nombre.localeCompare(b.nombre))); },
+    async unidades() { return wait(unis); },
+    async crearUnidad(u) { const x = { id: id(), ...u }; unis.push(x); return wait(x); },
+    async crearIngrediente(i) { const x = { id: id(), estado:'activo', ...i }; ing.push(x); return wait(x); },
+    async actualizarInsumo(iid, d) { const i = ing.find(x => x.id === iid); Object.assign(i, d); return wait(i); },
+    async guardarConfig(d) { Object.assign(demoCfg, d); return wait(demoCfg); },
+    async actualizarPrecio(iid, precio, pres, unidad) { const i = ing.find(x => x.id === iid); Object.assign(i, { precio_actual: precio, cantidad_presentacion: pres, unidad: unidad || i.unidad, estado:'activo' }); return wait(i); },
+    async guardarReceta(rec, ls, quitar) {
+      let r = rec.id ? recs.find(x => x.id === rec.id) : null;
+      if (!r) { r = { id: id() }; recs.push(r); }
+      Object.assign(r, { nombre: rec.nombre, tipo: rec.tipo, porciones_base: rec.porciones_base, rendimiento_cantidad: rec.rendimiento_cantidad, rendimiento_unidad: rec.rendimiento_unidad, descripcion: rec.descripcion,
+        se_renta: rec.se_renta, precio_renta: rec.precio_renta, deposito: rec.deposito, precio_venta: rec.precio_venta, forma_obtencion: rec.forma_obtencion,
+        ref_diametro_cm: rec.ref_diametro_cm ?? null, ref_panes: rec.ref_panes ?? null });
+      lineas = lineas.filter(l => !quitar.includes(l.id));
+      ls.forEach(l => { const ex = l.id && lineas.find(x => x.id === l.id); if (ex) Object.assign(ex, l); else lineas.push({ ...l, id: id(), receta_id: r.id }); });
+      return wait(r);
+    },
+    async borrarReceta(rid) { recs.splice(recs.findIndex(r => r.id === rid), 1); lineas = lineas.filter(l => l.receta_id !== rid); },
+    async subirFoto(rid, blob) { const p = `demo/${rid}-${Date.now()}.jpg`; blobs[p] = URL.createObjectURL(blob); return p; },
+    async setFoto(rid, path) { recs.find(r => r.id === rid).foto_path = path; },
+    async borrarFoto(path) { delete blobs[path]; },
+    async fotoUrls(paths) { return Object.fromEntries(paths.filter(p => blobs[p]).map(p => [p, blobs[p]])); },
+    async config() { return wait(demoCfg); },
+    async clientes() { return wait(clis); },
+    async crearCliente(c) { const x = { ...c, id: id() }; clis.push(x); return wait(x); },
+    async actualizarCliente(cid, c) { const x = clis.find(z => z.id === cid); Object.assign(x, c); return wait(x); },
+    async borrarCliente(cid) { clis.splice(clis.findIndex(c => c.id === cid), 1); },
+    async pedidos() { return wait(peds.map(p => ({ ...p, clientes: clis.find(c => c.id === p.cliente_id) || null }))); },
+    async crearPedido(p) {
+      const x = { ...p, id: id() }; peds.push(x);
+      [['horneado', -4, '09:00'], ['preparacion', -2, '09:00'], ['decoracion', -1, '09:00'], ['empaque', 0, '13:00'], ['entrega', 0, p.hora_entrega || '17:00']]
+        .forEach(([etapa, k, h]) => tars.push({ id: id(), pedido_id: x.id, etapa, fecha_programada: sumarDias(p.fecha_entrega, k), hora_programada: h, estado: 'pendiente' }));
+      return wait(x);
+    },
+    async actualizarPedido(pid, d) { const x = peds.find(z => z.id === pid); Object.assign(x, d); return wait(x); },
+    async tareas(a, b) { return wait(tars.filter(t => t.fecha_programada >= a && t.fecha_programada <= b).map(t => { const p = peds.find(z => z.id === t.pedido_id); return { ...t, pedidos: p ? { ...p, clientes: clis.find(c => c.id === p.cliente_id) || null } : null }; })); },
+    async estadoTarea(tid, estado) { tars.find(t => t.id === tid).estado = estado; },
+    async detalleDe(ids) { return wait(dets.filter(d => ids.includes(d.cotizacion_id))); },
+    async lineasDe(ids) { return wait(lineas.filter(l => ids.includes(l.receta_id))); },
+    async moldes() { return wait(molds); },
+    async guardarMolde(m) { let x = m.id && molds.find(z => z.id === m.id); if (x) Object.assign(x, m); else { x = { id: id(), ...m }; molds.push(x); } return wait(x); },
+    async borrarMolde(mid) { molds.splice(molds.findIndex(m => m.id === mid), 1); },
+    async cotizaciones() { return wait(cots.map(c => ({ ...c, clientes: clis.find(x => x.id === c.cliente_id) || null })).reverse()); },
+    async cotizacion(cid) { return wait({ ...cots.find(c => c.id === cid), detalle: dets.filter(d => d.cotizacion_id === cid) }); },
+    async guardarCotizacion(cot, ls) {
+      let c = cot.id && cots.find(x => x.id === cot.id);
+      if (c) Object.assign(c, cot); else { c = { ...cot, id: id() }; cots.push(c); }
+      for (let i = dets.length - 1; i >= 0; i--) if (dets[i].cotizacion_id === c.id) dets.splice(i, 1);
+      ls.forEach(l => dets.push({ ...l, id: id(), cotizacion_id: c.id }));
+      return wait(c);
+    },
+    async estadoCotizacion(cid, estado) { cots.find(c => c.id === cid).estado = estado; },
+    async borrarCotizacion(cid) { cots.splice(cots.findIndex(c => c.id === cid), 1); },
+    async empaques() { return wait(emps); },
+    async guardarEmpaque(e) { let x = e.id && emps.find(z => z.id === e.id); if (x) Object.assign(x, e); else { x = { estado: 'activo', ...e, id: id() }; emps.push(x); } return wait(x); },
+    async borrarEmpaque(eid) { emps.splice(emps.findIndex(e => e.id === eid), 1); }
+  };
+}
+
+const api = DEMO ? demoApi() : supabaseApi();
+
+/* ===== Estado ===== */
+const S = { user: null, view: 'recetas', filtroR: 'todas', filtroP: 'todas', recetas: [], ingredientes: [], unidades: [], moldes: [], clientes: [], cotizaciones: [], empaques: [], pedidos: [], fotos: {}, ed: null, cot: null };
+
+/* ===== Login ===== */
+function renderLogin(err) {
+  $('#topbar').hidden = true;
+  $('#app').innerHTML = `
+  <div class="login">
+    <p class="brandbig">Recetario</p>
+    <p class="muted" style="margin:0 0 24px">Tus recetas con su costo, listas para cotizar.</p>
+    <form class="panel" id="fLogin" style="display:flex;flex-direction:column;gap:16px">
+      ${DEMO ? '<div class="note note-warn"><b>Modo demostración.</b><span>Los cambios no se guardan en tu base de datos.</span></div>' : ''}
+      <div class="field"><label for="lEmail">Correo</label><div class="inp"><input id="lEmail" type="email" autocomplete="username" required></div></div>
+      <div class="field"><label for="lPass">Contraseña</label><div class="inp"><input id="lPass" type="password" autocomplete="current-password" ${DEMO ? '' : 'required'}></div></div>
+      ${err ? `<div class="note note-err" role="alert"><b>No se pudo entrar.</b><span>${esc(err)}</span></div>` : ''}
+      <button class="btn btn-primary" type="submit">Entrar</button>
+    </form>
+  </div>`;
+  $('#fLogin').onsubmit = async e => {
+    e.preventDefault(); const b = e.submitter; b.disabled = true;
+    try { S.user = await api.signIn($('#lEmail').value.trim(), $('#lPass').value); start(); }
+    catch (x) { renderLogin(x.message); }
+  };
+}
+
+/* ===== Carga ===== */
+async function loadRecetas() {
+  let cfg;
+  [S.recetas, S.ingredientes, cfg, S.unidades, S.moldes, S.clientes, S.empaques] = await Promise.all([api.recetas(), api.ingredientes(), api.config().catch(() => null), api.unidades().catch(() => []), api.moldes().catch(() => []), api.clientes().catch(() => []), api.empaques().catch(() => [])]);
+  if (cfg) CFG = { ...CFG, ...Object.fromEntries(Object.entries(cfg).filter(([, v]) => v != null)) };
+  const faltan = [...S.recetas, ...S.empaques].map(r => r.foto_path).filter(p => p && !S.fotos[p]);
+  if (faltan.length) { try { Object.assign(S.fotos, await api.fotoUrls(faltan)); } catch (x) { console.warn(x); } }
+}
+const esInsumoDePieza = i => i.tipo === 'Topper' || i.tipo === 'Decoracion';
+
+/* ===== Recetas (lo que se cocina) ===== */
+function renderRecetas() {
+  const propias = S.recetas.filter(r => !ES_PIEZA(r.tipo));
+  const lista = propias.filter(r => S.filtroR === 'todas' || r.tipo === S.filtroR);
+  const sinPrecio = S.ingredientes.filter(i => !esInsumoDePieza(i) && (!Number(i.precio_actual) || !Number(i.cantidad_presentacion))).length;
+  $('#app').innerHTML = `
+  <div class="head"><div><span class="muted small">${propias.length} receta${propias.length === 1 ? '' : 's'}</span><h1>Recetas</h1></div>
+    <button class="btn btn-primary" id="btnNueva">+ Nueva receta</button></div>
+  ${sinPrecio ? `<div class="note note-warn" style="margin-bottom:16px"><b>Faltan precios.</b><span>${sinPrecio} insumo${sinPrecio === 1 ? '' : 's'} sin precio: los costos salen más bajos de lo real. <a href="#" id="goInsumos" style="color:var(--caramel-strong);font-weight:600">Capturarlos</a></span></div>` : ''}
+  <div class="chips" style="margin-bottom:20px">
+    ${[{ id:'todas', label:'Todas' }, ...TIPOS_RECETA].map(t => `<button class="chipbtn" data-f="${t.id}" aria-pressed="${S.filtroR === t.id}"><span class="chip c-${t.id}">${t.label}</span></button>`).join('')}
+  </div>
+  ${lista.length ? `<div class="grid-cards">${lista.map(cardReceta).join('')}</div>`
+    : `<div class="empty">No hay recetas${S.filtroR !== 'todas' ? ' de ' + tipoLabel(S.filtroR).toLowerCase() : ''} todavía.<br><button class="btn btn-secondary" style="margin-top:16px" id="btnNueva2">+ Agregar la primera</button></div>`}`;
+  $('#btnNueva').onclick = () => openEditor(null, 'receta');
+  const b2 = $('#btnNueva2'); if (b2) b2.onclick = () => openEditor(null, 'receta');
+  const gi = $('#goInsumos'); if (gi) gi.onclick = e => { e.preventDefault(); go('insumos'); };
+  document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { S.filtroR = b.dataset.f; renderRecetas(); });
+  document.querySelectorAll('[data-rid]').forEach(b => b.onclick = () => openEditor(b.dataset.rid, 'receta'));
+}
+function avisosHtml(r) {
+  const a = [];
+  if (r.ingredientes_sin_precio) a.push(`${r.ingredientes_sin_precio} sin precio`);
+  if (r.unidades_incompatibles) a.push(`${r.unidades_incompatibles} con unidad incompatible`);
+  return a;
+}
+function cardReceta(r) {
+  const rinde = r.rendimiento_cantidad ? `${Number(r.rendimiento_cantidad).toLocaleString('es-MX')} ${r.rendimiento_unidad}` : `${r.porciones_base} porc.`;
+  const avisos = avisosHtml(r);
+  return `<button class="card" data-rid="${esc(r.receta_id)}">
+    <div class="card-top"><h3>${esc(r.nombre)}</h3><span class="chip c-${esc(r.tipo)}">${tipoLabel(r.tipo)}</span></div>
+    <div class="stats">
+      <div class="stat"><b>${money(r.costo_tanda)}</b><span>por tanda</span></div>
+      <div class="stat"><b>${esc(rinde)}</b><span>rinde</span></div>
+      <div class="stat"><b>${money(r.costo_porcion)}</b><span>por porción</span></div>
+    </div>
+    <span class="small ${avisos.length ? '' : 'muted'}" style="${avisos.length ? 'color:var(--caramel-strong);font-weight:600' : ''}">${r.num_ingredientes} ingrediente${r.num_ingredientes == 1 ? '' : 's'}${avisos.length ? ' · ' + avisos.join(' · ') : ''}</span>
+  </button>`;
+}
+
+/* ===== Toppers y decoración ===== */
+function renderPiezas() {
+  const propias = S.recetas.filter(r => ES_PIEZA(r.tipo));
+  const lista = propias.filter(r => S.filtroP === 'todas' || r.tipo === S.filtroP);
+  $('#app').innerHTML = `
+  <div class="head"><div><span class="muted small">${propias.length} pieza${propias.length === 1 ? '' : 's'}</span><h1>Toppers y decoración</h1></div>
+    <button class="btn btn-primary" id="btnNueva">+ Nueva pieza</button></div>
+  <div class="chips" style="margin-bottom:20px">
+    ${[{ id:'todas', label:'Todas' }, ...TIPOS_PIEZA].map(t => `<button class="chipbtn" data-f="${t.id}" aria-pressed="${S.filtroP === t.id}"><span class="chip c-${t.id}">${t.label}</span></button>`).join('')}
+  </div>
+  ${lista.length ? `<div class="grid-cards">${lista.map(cardPieza).join('')}</div>`
+    : `<div class="empty">Aquí van los toppers, bases, figuras y adornos que compras o armas.<br><button class="btn btn-secondary" style="margin-top:16px" id="btnNueva2">+ Agregar la primera</button></div>`}`;
+  $('#btnNueva').onclick = () => openEditor(null, 'pieza');
+  const b2 = $('#btnNueva2'); if (b2) b2.onclick = () => openEditor(null, 'pieza');
+  document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { S.filtroP = b.dataset.f; renderPiezas(); });
+  document.querySelectorAll('[data-rid]').forEach(b => b.onclick = () => openEditor(b.dataset.rid, 'pieza'));
+}
+function fotoHtml(url, nombre, cls) {
+  return url ? `<img class="${cls}" src="${esc(url)}" alt="">`
+             : `<div class="${cls} ph" aria-hidden="true">${esc((nombre || '?').trim().charAt(0).toUpperCase())}</div>`;
+}
+function cardPieza(r) {
+  const avisos = avisosHtml(r);
+  return `<button class="card card-foto" data-rid="${esc(r.receta_id)}">
+    ${fotoHtml(S.fotos[r.foto_path], r.nombre, 'cfoto')}
+    <div class="card-body">
+      <div class="card-top"><h3>${esc(r.nombre)}</h3><span class="chip c-${esc(r.tipo)}">${tipoLabel(r.tipo)}</span></div>
+      <div class="stats">
+        <div class="stat"><b>${money(r.costo_tanda)}</b><span>te cuesta</span></div>
+        <div class="stat"><b>${money(r.precio_venta)}</b><span>si se vende</span></div>
+        <div class="stat"><b>${r.se_renta ? money(r.precio_renta) : '—'}</b><span>${r.se_renta ? 'renta + dep. ' + money(r.deposito) : 'no se renta'}</span></div>
+      </div>
+      <span class="small ${avisos.length ? '' : 'muted'}" style="${avisos.length ? 'color:var(--caramel-strong);font-weight:600' : ''}">${r.forma_obtencion === 'armada' ? `La armas · ${r.num_ingredientes} material${r.num_ingredientes == 1 ? '' : 'es'}` : 'La compras hecha'}${avisos.length ? ' · ' + avisos.join(' · ') : ''}</span>
+    </div>
+  </button>`;
+}
+
+/* ===== Editor (recetas y piezas) ===== */
+async function openEditor(id, kind) {
+  $('#app').innerHTML = '<p class="muted">Cargando…</p>';
+  [S.ingredientes, S.unidades] = await Promise.all([api.ingredientes(), api.unidades().catch(() => S.unidades)]);
+  const base = { kind, id: null, nombre: '', descripcion: '', se_renta: false, precio_renta: '', deposito: '', precio_venta: '',
+    foto_path: null, fotoBlob: null, fotoPreview: null, quitarFoto: false, ref_diametro_cm: '', ref_panes: '', originales: [], filas: [],
+    forma: 'comprada', compra: { ing: null, lineaId: null, precio: '', piezas: '1' } };
+  if (id) {
+    const r = await api.receta(id);
+    S.ed = { ...base, id: r.id, nombre: r.nombre, tipo: r.tipo, porciones_base: r.porciones_base, rendimiento_cantidad: r.rendimiento_cantidad, rendimiento_unidad: r.rendimiento_unidad || 'g',
+      descripcion: r.descripcion || '', se_renta: !!r.se_renta, precio_renta: r.precio_renta ?? '', deposito: r.deposito ?? '', precio_venta: r.precio_venta ?? '',
+      foto_path: r.foto_path || null, ref_diametro_cm: r.ref_diametro_cm ?? '', ref_panes: r.ref_panes ?? '', originales: r.lineas.map(l => l.id),
+      filas: r.lineas.map(l => filaDesdeIngrediente(S.ingredientes.find(i => i.id === l.ingrediente_id), { id: l.id, cantidad: l.cantidad, unidad: l.unidad })) };
+    if (kind === 'pieza') {
+      const unica = r.lineas.length === 1 ? r.lineas[0] : null, ingU = unica && S.ingredientes.find(i => i.id === unica.ingrediente_id);
+      S.ed.forma = r.forma_obtencion || (ingU && esInsumoDePieza(ingU) ? 'comprada' : r.lineas.length ? 'armada' : 'comprada');
+      if (S.ed.forma === 'comprada' && ingU) {
+        const porPieza = convertir(Number(unica.cantidad), unica.unidad, ingU.unidad) || 1;   // normalmente 1 pz
+        S.ed.compra = { ing: ingU, lineaId: unica.id, precio: Number(ingU.precio_actual) ? String(+(ingU.precio_actual * porPieza).toFixed(2)) : '',
+          piezas: ingU.cantidad_presentacion ? String(+(ingU.cantidad_presentacion / porPieza).toFixed(4)) : '1' };
+        S.ed.filas = [];
+      }
+    }
+  } else if (kind === 'pieza') {
+    S.ed = { ...base, tipo: S.filtroP !== 'todas' ? S.filtroP : 'topper', porciones_base: 1, rendimiento_cantidad: null, rendimiento_unidad: 'pz' };
+  } else {
+    S.ed = { ...base, tipo: S.filtroR !== 'todas' ? S.filtroR : 'bizcocho', porciones_base: 10, rendimiento_cantidad: null, rendimiento_unidad: 'g' };
+  }
+  if (!S.ed.filas.length) S.ed.filas.push(filaVacia());
+  renderEditor();
+}
+function filaVacia() { return { key: Math.random().toString(36).slice(2), id: null, ing: null, nombre: '', cantidad: '', unidad: S.ed?.kind === 'pieza' ? 'pz' : 'g', precio: '', pres: '', presU: S.ed?.kind === 'pieza' ? 'pz' : 'g' }; }
+function filaDesdeIngrediente(i, extra = {}) {
+  const f = filaVacia();
+  if (i) Object.assign(f, { ing: i, nombre: i.nombre, unidad: i.unidad, precio: i.precio_actual ?? '', pres: i.cantidad_presentacion ?? '', presU: i.unidad });
+  return Object.assign(f, extra);
+}
+function costoFila(f) {
+  const cant = num(f.cantidad), precio = num(f.precio), pres = num(f.pres);
+  if (!f.nombre.trim() || cant == null) return { v: null };
+  const c = convertir(cant, f.unidad, f.presU);
+  if (c == null) return { v: null, err: `no se puede convertir ${f.unidad} a ${f.presU}` };
+  if (!precio || !pres) return { v: 0, warn: 'sin precio' };
+  return { v: c * precio / pres };
+}
+function totales() {
+  const e = S.ed;
+  if (e.kind === 'pieza' && e.forma === 'comprada') {
+    const p = num(e.compra.precio), q = num(e.compra.piezas);
+    const t = p && q ? p / q : 0;
+    return { t, sin: p ? 0 : 1, inc: 0, n: 1, porcion: t };
+  }
+  let t = 0, sin = 0, inc = 0, n = 0;
+  e.filas.forEach(f => { const c = costoFila(f); if (!f.nombre.trim()) return; n++; if (c.err) inc++; if (c.warn) sin++; if (c.v) t += c.v; });
+  const p = num(e.porciones_base);
+  return { t, sin, inc, n, porcion: p ? t / p : null };
+}
+function filasHtml(e, etiqueta) {
+  return `
+      <div class="rows-head"><span>${etiqueta}</span><span>Cantidad</span><span>Unidad</span><span>Precio paquete</span><span>Contenido paquete</span><span style="text-align:right">Costo</span><span></span></div>
+      <div id="filas">${e.filas.map(filaHtml).join('')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" id="btnFila">+ Agregar ${etiqueta.toLowerCase()}</button>
+        <span class="muted small">Enter en la última fila agrega otra</span>
+      </div>`;
+}
+function renderEditor() {
+  const e = S.ed, pieza = e.kind === 'pieza';
+  const tipos = pieza ? TIPOS_PIEZA : TIPOS_RECETA;
+  const volver = S.retornoCot ? '← Volver a la cotización' : pieza ? '← Toppers y decoración' : '← Recetas';
+  const titulo = e.id ? esc(e.nombre) || (pieza ? 'Pieza' : 'Receta') : (pieza ? 'Nueva pieza' : 'Nueva receta');
+  const tipoHtml = `<div class="field"><span class="lbl">Tipo</span>
+        <div class="chips" id="eTipo">${tipos.map(t => `<button type="button" class="chipbtn" data-t="${t.id}" aria-pressed="${e.tipo === t.id}"><span class="chip c-${t.id}">${t.label}</span></button>`).join('')}</div></div>`;
+  const cuerpo = pieza ? `
+      <div class="pz-top">
+        <div class="foto-box" id="fotoBox"></div>
+        <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+          <div class="field"><label for="eNombre">Nombre</label><div class="inp" id="iNombre"><input id="eNombre" value="${esc(e.nombre)}" placeholder="Ej. Base de acrílico 20 cm"></div></div>
+          ${tipoHtml}
+        </div>
+      </div>
+      <div class="field" style="margin-top:24px"><span class="lbl">¿Cómo la consigues?</span>
+        <div class="seg" role="radiogroup">
+          <button type="button" role="radio" data-forma="comprada" aria-checked="${e.forma === 'comprada'}"><b>La compro hecha</b><small>Base, figura, vela, letrero listo</small></button>
+          <button type="button" role="radio" data-forma="armada" aria-checked="${e.forma === 'armada'}"><b>La armo yo</b><small>Con materiales: acrílico, vinil, palitos…</small></button>
+        </div>
+      </div>
+      <div id="formaBox" style="margin-top:16px"></div>
+      <div class="pieza" id="pieza"></div>
+      <div class="field" style="margin-top:24px"><label for="eDesc">Notas <span class="muted" style="font-weight:400">(opcional)</span></label><div class="inp"><textarea id="eDesc" placeholder="Medidas, colores, dónde la compras…">${esc(e.descripcion)}</textarea></div></div>`
+  : `
+      <div class="meta" style="margin-bottom:16px">
+        <div class="field f-nombre"><label for="eNombre">Nombre de la receta</label><div class="inp" id="iNombre"><input id="eNombre" value="${esc(e.nombre)}" placeholder="Ej. Betún de queso crema"></div></div>
+        <div class="field"><label for="ePorc">Rinde (porciones)</label><div class="inp" id="iPorc"><input id="ePorc" inputmode="numeric" value="${esc(e.porciones_base)}"><span class="affix">porc.</span></div></div>
+        <div class="field"><label for="eRend">Rinde en peso <span class="muted" style="font-weight:400">(opcional)</span></label><div class="inp"><input id="eRend" inputmode="decimal" value="${esc(e.rendimiento_cantidad ?? '')}" placeholder="—"><select data-unit id="eRendU" aria-label="Unidad" style="flex:0 0 64px">${opcionesUnidad(e.rendimiento_unidad)}</select></div></div>
+      </div>
+      <div style="margin-bottom:20px">${tipoHtml}</div>
+      <div class="refbox" id="refBox"></div>
+      <h2 style="margin-bottom:10px">Ingredientes</h2>
+      ${filasHtml(e, 'Ingrediente')}
+      <div class="field" style="margin-top:24px"><label for="eDesc">Notas <span class="muted" style="font-weight:400">(opcional)</span></label><div class="inp"><textarea id="eDesc" placeholder="Temperatura, tiempo de horneado, tamaño de molde…">${esc(e.descripcion)}</textarea></div></div>`;
+  $('#app').innerHTML = `
+  <div class="head">
+    <div><a href="#" class="small muted" id="volver">${volver}</a><h1>${titulo}</h1></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${e.id ? '<button class="btn btn-danger btn-sm" id="btnBorrar">Eliminar</button>' : ''}<button class="btn btn-ghost" id="btnCancelar">Cancelar</button><button class="btn btn-primary" id="btnGuardar">Guardar ${pieza ? 'pieza' : 'receta'}</button></div>
+  </div>
+  <datalist id="dlIng">${S.ingredientes.map(i => `<option value="${esc(i.nombre)}">`).join('')}</datalist>
+  <div class="ed"><div class="panel">${cuerpo}</div><aside class="side" id="resumen"></aside></div>`;
+  bindEditor();
+  if (pieza) { renderFoto(); renderForma(); } else renderRef();
+  renderResumen();
+}
+function renderRef() {
+  const e = S.ed, box = $('#refBox'); if (!box) return;
+  const t = { bizcocho: ['Me alcanzó para', 'panes de'], relleno: ['Alcanza para', 'capas de'], betun: ['Cubre un pastel de', null] }[e.tipo];
+  if (!t) { box.innerHTML = ''; return; }
+  const iP = `<div class="inp ref-n"><input id="eRefP" inputmode="decimal" value="${esc(e.ref_panes)}" placeholder="2"></div>`;
+  const iD = `<div class="inp ref-n"><input id="eRefD" inputmode="decimal" value="${esc(e.ref_diametro_cm)}" placeholder="20"><span class="affix">cm</span></div>`;
+  box.innerHTML = `<span class="lbl">Rendimiento por molde <span class="muted" style="font-weight:400">(opcional, hace más exacto el cotizador)</span></span>
+    <div class="ref-frase">${e.tipo === 'betun' ? `<span>${t[0]}</span>${iD}<span>con</span>${iP}<span>panes</span>` : `<span>${t[0]}</span>${iP}<span>${t[1]}</span>${iD}`}</div>
+    <span class="sug">${e.tipo === 'bizcocho' ? 'Anótalo la próxima vez que hornees esta receta.' : e.tipo === 'relleno' ? 'Cuántas capas de relleno sacas con una tanda.' : 'Qué tamaño de pastel alcanzas a cubrir con una tanda.'} Sin este dato se calcula por porciones.</span>`;
+  $('#eRefP').oninput = ev => { e.ref_panes = ev.target.value; };
+  $('#eRefD').oninput = ev => { e.ref_diametro_cm = ev.target.value; };
+}
+function renderFoto() {
+  const e = S.ed, box = $('#fotoBox');
+  const url = e.fotoPreview || (!e.quitarFoto && S.fotos[e.foto_path]) || null;
+  box.innerHTML = `
+    <label class="foto-drop" for="fotoInput" title="Elegir foto">
+      ${url ? `<img src="${esc(url)}" alt="Foto de la pieza">` : '<span class="foto-ph"><b>+ Foto</b><small>opcional</small></span>'}
+    </label>
+    <input type="file" id="fotoInput" accept="image/*" hidden>
+    ${url ? '<div class="foto-acc"><label for="fotoInput" class="btn btn-ghost btn-sm">Cambiar</label><button type="button" class="btn btn-ghost btn-sm" id="fotoQuitar">Quitar</button></div>' : ''}`;
+  $('#fotoInput').onchange = async ev => {
+    const file = ev.target.files[0]; if (!file) return;
+    try {
+      const blob = await reducirImagen(file);
+      if (e.fotoPreview) URL.revokeObjectURL(e.fotoPreview);
+      e.fotoBlob = blob; e.fotoPreview = URL.createObjectURL(blob); e.quitarFoto = false; renderFoto();
+    } catch (x) { toast('err', 'No se pudo usar la foto.', 'Prueba con otra imagen (JPG o PNG).'); }
+  };
+  const q = $('#fotoQuitar'); if (q) q.onclick = () => { if (e.fotoPreview) URL.revokeObjectURL(e.fotoPreview); e.fotoBlob = null; e.fotoPreview = null; e.quitarFoto = true; renderFoto(); };
+}
+async function reducirImagen(file, max = 1000) {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('imagen')), 'image/jpeg', 0.82));
+}
+function renderForma() {
+  const e = S.ed, box = $('#formaBox');
+  document.querySelectorAll('[data-forma]').forEach(b => b.setAttribute('aria-checked', b.dataset.forma === e.forma));
+  if (e.forma === 'comprada') {
+    box.innerHTML = `
+      <div class="pieza-grid">
+        <div class="field"><label for="cPrecio">¿Cuánto pagaste?</label><div class="inp" id="iCPrecio"><span class="affix">$</span><input id="cPrecio" inputmode="decimal" value="${esc(e.compra.precio)}" placeholder="0.00"></div></div>
+        <div class="field"><label for="cPiezas">¿Cuántas piezas traía?</label><div class="inp" id="iCPiezas"><input id="cPiezas" inputmode="decimal" value="${esc(e.compra.piezas)}" placeholder="1"><span class="affix">pz</span></div></div>
+        <div class="field"><span class="lbl">Cada una te cuesta</span><div class="cada" id="cCada"></div></div>
+      </div>`;
+    const upd = () => { const t = totales(); $('#cCada').textContent = t.t ? money(t.t) : '—'; renderResumen(); };
+    $('#cPrecio').oninput = ev => { e.compra.precio = ev.target.value; $('#iCPrecio').classList.remove('err'); upd(); };
+    $('#cPiezas').oninput = ev => { e.compra.piezas = ev.target.value; $('#iCPiezas').classList.remove('err'); upd(); };
+    upd();
+  } else {
+    box.innerHTML = `<h2 style="margin-bottom:10px;font-size:17px">Materiales</h2>${filasHtml(e, 'Material')}`;
+    bindFilas();
+  }
+}
+function filaHtml(f) {
+  const c = costoFila(f), nuevo = f.nombre.trim() && !f.ing;
+  return `<div class="row" data-k="${f.key}">
+    <div><span class="mlabel">${S.ed.kind === 'pieza' ? 'Material' : 'Ingrediente'}</span><div class="inp"><input data-x="nombre" list="dlIng" value="${esc(f.nombre)}" placeholder="Escribe un ${S.ed.kind === 'pieza' ? 'material' : 'ingrediente'}…" autocomplete="off"></div>${nuevo ? '<span class="tag-new">Insumo nuevo</span>' : ''}</div>
+    <div><span class="mlabel">Cantidad</span><div class="inp"><input data-x="cantidad" inputmode="decimal" value="${esc(f.cantidad)}" placeholder="0"></div></div>
+    <div><span class="mlabel">Unidad</span><div class="inp ${c.err ? 'err' : ''}"><select data-unit data-x="unidad">${opcionesUnidad(f.unidad)}</select></div></div>
+    <div><span class="mlabel">Precio paquete</span><div class="inp ${c.warn ? 'warn' : ''}"><span class="affix">$</span><input data-x="precio" inputmode="decimal" value="${esc(f.precio === 0 ? '' : f.precio)}" placeholder="0.00"></div></div>
+    <div><span class="mlabel">Contenido paquete</span><div class="inp ${c.warn ? 'warn' : ''}"><input data-x="pres" inputmode="decimal" value="${esc(f.pres)}" placeholder="0">${f.ing ? `<span class="affix">${esc(f.presU)}</span>` : `<select data-unit data-x="presU" aria-label="Unidad del paquete" style="flex:0 0 52px;padding:0 4px">${opcionesUnidad(f.presU)}</select>`}</div></div>
+    <div class="cost" data-cost>${costoHtml(c)}</div>
+    <button class="x" data-del aria-label="Quitar">×</button>
+  </div>`;
+}
+function costoHtml(c) {
+  if (c.err) return `<span style="color:var(--danger)">—<small>${esc(c.err)}</small></span>`;
+  if (c.warn) return `<span style="color:var(--caramel-strong)">$0.00<small>sin precio</small></span>`;
+  return c.v == null ? '<span class="muted">—</span>' : money(c.v);
+}
+function renderPieza() {
+  const e = S.ed, box = $('#pieza'); if (!box) return;
+  const sg = sugeridos(totales().t);
+  const campo = (id, lbl, val, sug, help) => `<div class="field"><label for="${id}">${lbl}</label><div class="inp"><span class="affix">$</span><input id="${id}" inputmode="decimal" value="${esc(val)}" placeholder="${sug}"></div><span class="sug">${help}</span></div>`;
+  const hVenta = `Sugerido ${money(sg.venta)} (costo +${CFG.pct_venta_pieza}%)`, hRenta = `Sugerido ${money(sg.renta)} (${CFG.pct_renta}% del costo)`, hDep = `Sugerido ${money(sg.deposito)} · se devuelve en ${CFG.dias_devolucion} días`;
+  if (!box.dataset.ready) {
+    box.innerHTML = `
+      <h2 style="font-size:17px">Venta y renta</h2>
+      <label class="check"><input type="checkbox" id="eRenta" ${e.se_renta ? 'checked' : ''}><span>Esta pieza se puede rentar<small>Se presta con el pastel y te la regresan. Se cobra renta y un depósito que devuelves.</small></span></label>
+      <div class="pieza-grid" id="piezaCampos"></div>
+      <span class="sug">Deja vacío para usar lo sugerido.</span>`;
+    box.dataset.ready = 1;
+    $('#eRenta').onchange = ev => { e.se_renta = ev.target.checked; renderPieza(); renderResumen(); };
+  }
+  const grid = $('#piezaCampos'), firma = String(e.se_renta);
+  if (grid.dataset.firma !== firma) {
+    grid.innerHTML = campo('eVenta', 'Precio si se vende', e.precio_venta, sg.venta, hVenta)
+      + (e.se_renta ? campo('eRentaP', 'Renta', e.precio_renta, sg.renta, hRenta) + campo('eDep', 'Depósito', e.deposito, sg.deposito, hDep) : '');
+    grid.dataset.firma = firma;
+    const bind = (id, k) => { const el = $('#' + id); if (el) el.oninput = ev => { e[k] = ev.target.value; renderResumen(); }; };
+    bind('eVenta', 'precio_venta'); bind('eRentaP', 'precio_renta'); bind('eDep', 'deposito');
+  } else {
+    [['eVenta', sg.venta, hVenta], ['eRentaP', sg.renta, hRenta], ['eDep', sg.deposito, hDep]]
+      .forEach(([id, v, h]) => { const el = $('#' + id); if (el) { el.placeholder = v; el.closest('.field').querySelector('.sug').textContent = h; } });
+  }
+}
+function renderResumen() {
+  const e = S.ed, t = totales();
+  if (e.kind === 'pieza') {
+    renderPieza();
+    const sg = sugeridos(t.t);
+    const venta = num(e.precio_venta) ?? sg.venta, renta = num(e.precio_renta) ?? sg.renta, dep = num(e.deposito) ?? sg.deposito;
+    $('#resumen').innerHTML = `
+      <div class="panel" style="display:flex;flex-direction:column;gap:12px">
+        <span class="muted small">Así queda la pieza</span>
+        <div><div class="big">${money(t.t)}</div><span class="muted small">te cuesta cada una</span></div>
+        <div class="stats" style="grid-template-columns:1fr 1fr">
+          <div class="stat"><b>${money(venta)}</b><span>si se vende</span></div>
+          <div class="stat"><b>${e.se_renta ? money(renta) : '—'}</b><span>${e.se_renta ? 'renta + dep. ' + money(dep) : 'no se renta'}</span></div>
+        </div>
+      </div>
+      ${t.sin ? `<div class="note note-warn"><b>Falta el precio.</b><span>${e.forma === 'comprada' ? 'Escribe cuánto pagaste.' : `${t.sin} material${t.sin === 1 ? '' : 'es'} sin precio.`}</span></div>` : ''}
+      ${t.inc ? `<div class="note note-err"><b>Revisa unidades.</b><span>${t.inc} material${t.inc === 1 ? '' : 'es'} con una unidad que no se puede convertir.</span></div>` : ''}`;
+    return;
+  }
+  const rend = num(e.rendimiento_cantidad);
+  $('#resumen').innerHTML = `
+    <div class="panel" style="display:flex;flex-direction:column;gap:12px">
+      <span class="muted small">Así queda la receta</span>
+      <div><div class="big">${money(t.t)}</div><span class="muted small">costo por tanda · ${t.n} ingrediente${t.n === 1 ? '' : 's'}</span></div>
+      <div class="stats" style="grid-template-columns:1fr 1fr">
+        <div class="stat"><b>${money(t.porcion)}</b><span>por porción (${esc(e.porciones_base || '—')})</span></div>
+        <div class="stat"><b>${rend ? money(t.t / rend) : '—'}</b><span>${rend ? 'por ' + esc(e.rendimiento_unidad) : 'por gramo / pieza'}</span></div>
+      </div>
+    </div>
+    ${t.sin ? `<div class="note note-warn"><b>Faltan precios.</b><span>${t.sin} ingrediente${t.sin === 1 ? '' : 's'} sin precio. Captúralo en la fila y se actualiza en tus insumos.</span></div>` : ''}
+    ${t.inc ? `<div class="note note-err"><b>Revisa unidades.</b><span>${t.inc} ingrediente${t.inc === 1 ? '' : 's'} con una unidad que no se puede convertir a la del paquete.</span></div>` : ''}
+    ${!t.sin && !t.inc && t.n ? '<div class="note note-ok"><b>Todo con precio.</b><span>El costo está completo.</span></div>' : ''}`;
+}
+function filaPorKey(k) { return S.ed.filas.find(f => f.key === k); }
+function refrescarFila(row, f) {
+  const c = costoFila(f);
+  row.querySelector('[data-cost]').innerHTML = costoHtml(c);
+  const [iU, iP, iQ] = [row.querySelector('[data-x="unidad"]').closest('.inp'), row.querySelector('[data-x="precio"]').closest('.inp'), row.querySelector('[data-x="pres"]').closest('.inp')];
+  iU.classList.toggle('err', !!c.err); iP.classList.toggle('warn', !!c.warn); iQ.classList.toggle('warn', !!c.warn);
+  renderResumen();
+}
+function bindEditor() {
+  const e = S.ed, destino = e.kind === 'pieza' ? 'piezas' : 'recetas';
+  const salir = () => S.retornoCot ? volverACot(null) : go(destino);
+  $('#volver').onclick = ev => { ev.preventDefault(); salir(); };
+  $('#btnCancelar').onclick = salir;
+  $('#eNombre').oninput = ev => { e.nombre = ev.target.value; $('#iNombre').classList.remove('err'); if (e.kind === 'pieza' && !e.fotoPreview && !S.fotos[e.foto_path]) renderFoto(); };
+  if ($('#ePorc')) {
+    $('#ePorc').oninput = ev => { e.porciones_base = ev.target.value; $('#iPorc').classList.remove('err'); renderResumen(); };
+    $('#eRend').oninput = ev => { e.rendimiento_cantidad = ev.target.value; renderResumen(); };
+    $('#eRendU').onchange = ev => { e.rendimiento_unidad = ev.target.value; renderResumen(); };
+  }
+  $('#eDesc').oninput = ev => { e.descripcion = ev.target.value; };
+  document.querySelectorAll('#eTipo [data-t]').forEach(b => b.onclick = () => { e.tipo = b.dataset.t; document.querySelectorAll('#eTipo [data-t]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderRef(); });
+  document.querySelectorAll('[data-forma]').forEach(b => b.onclick = () => {
+    if (e.forma === b.dataset.forma) return;
+    e.forma = b.dataset.forma;
+    if (e.forma === 'armada' && !e.filas.some(f => f.nombre.trim())) e.filas = [filaVacia()];
+    renderForma(); renderResumen();
+  });
+  $('#btnGuardar').onclick = guardar;
+  const bb = $('#btnBorrar'); if (bb) bb.onclick = borrar;
+  if (e.kind !== 'pieza') bindFilas();
+}
+function bindFilas() {
+  const e = S.ed, cont = $('#filas');
+  $('#btnFila').onclick = () => agregarFila(true);
+  cont.addEventListener('input', ev => {
+    const row = ev.target.closest('.row'), f = filaPorKey(row.dataset.k), x = ev.target.dataset.x;
+    if (!x) return;
+    f[x] = ev.target.value;
+    if (x === 'nombre') {
+      const match = S.ingredientes.find(i => norm(i.nombre) === norm(f.nombre));
+      if (match && match !== f.ing) {               // eligió un insumo del catálogo: precargar su precio
+        Object.assign(f, filaDesdeIngrediente(match, { key: f.key, id: f.id, cantidad: f.cantidad }));
+        row.outerHTML = filaHtml(f); const nr = cont.querySelector(`[data-k="${f.key}"]`); nr.querySelector('[data-x="cantidad"]').focus(); renderResumen(); return;
+      }
+      if (!match && f.ing) { f.ing = null; f.precio = ''; f.pres = ''; row.outerHTML = filaHtml(f); const nr = cont.querySelector(`[data-k="${f.key}"] [data-x="nombre"]`); nr.focus(); nr.setSelectionRange(nr.value.length, nr.value.length); renderResumen(); return; }
+      const tag = row.querySelector('.tag-new'); const nuevo = f.nombre.trim() && !f.ing;
+      if (nuevo && !tag) row.firstElementChild.insertAdjacentHTML('beforeend', '<span class="tag-new">Insumo nuevo</span>');
+      if (!nuevo && tag) tag.remove();
+      if (!f.ing && !f.presUManual) { f.presU = f.unidad; }
+    }
+    if (x === 'presU') f.presUManual = true;
+    if (x === 'unidad' && !f.ing && (!f.presUManual || convertir(1, f.unidad, f.presU) == null)) { f.presU = f.unidad; f.presUManual = false; const s = row.querySelector('[data-x="presU"]'); if (s) s.value = f.presU; }
+    refrescarFila(row, f);
+  });
+  cont.addEventListener('change', ev => { if (ev.target.tagName === 'SELECT') ev.target.dispatchEvent(new Event('input', { bubbles: true })); });
+  cont.addEventListener('click', ev => {
+    if (!ev.target.closest('[data-del]')) return;
+    const row = ev.target.closest('.row'); e.filas = e.filas.filter(f => f.key !== row.dataset.k);
+    row.remove(); if (!e.filas.length) agregarFila(true); renderResumen();
+  });
+  cont.addEventListener('keydown', ev => {
+    if (ev.key !== 'Enter' || ev.target.tagName !== 'INPUT') return;
+    ev.preventDefault();
+    const row = ev.target.closest('.row');
+    if (row === cont.lastElementChild) agregarFila(true);
+    else row.nextElementSibling.querySelector('[data-x="nombre"]').focus();
+  });
+}
+function agregarFila(focus) {
+  const f = filaVacia(); S.ed.filas.push(f);
+  $('#filas').insertAdjacentHTML('beforeend', filaHtml(f));
+  if (focus) $(`#filas [data-k="${f.key}"] [data-x="nombre"]`).focus();
+}
+function validarFilas(filas, que, errores) {
+  if (!filas.length) errores.push(`Agrega al menos un ${que}.`);
+  filas.forEach(f => { if (!(num(f.cantidad) > 0)) errores.push(`Falta la cantidad de "${f.nombre.trim()}".`); else if (costoFila(f).err) errores.push(`"${f.nombre.trim()}": ${costoFila(f).err}.`); });
+  if (filas.map(f => norm(f.nombre)).some((n, i, a) => a.indexOf(n) !== i)) errores.push(`Hay ${que}es repetidos; súmalos en una sola fila.`.replace('ingredientees', 'ingredientes'));
+}
+async function lineasDesdeFilas(filas) {
+  for (const f of filas) {
+    const precio = num(f.precio) || 0, pres = num(f.pres);
+    if (!f.ing) {                                    // insumo nuevo: crearlo en el catálogo
+      f.ing = await api.crearIngrediente({ nombre: f.nombre.trim(), unidad: f.presU || f.unidad, precio_actual: precio, cantidad_presentacion: pres || null, tipo: 'Ingrediente', estado: 'activo' });
+      S.ingredientes.push(f.ing);
+    } else if (precio !== Number(f.ing.precio_actual || 0) || (pres || null) !== (f.ing.cantidad_presentacion == null ? null : Number(f.ing.cantidad_presentacion))) {
+      f.ing = await api.actualizarPrecio(f.ing.id, precio, pres || null, f.ing.unidad);   // precio capturado o cambiado
+    }
+  }
+  return filas.map(f => ({ id: f.id, ingrediente_id: f.ing.id, cantidad: num(f.cantidad), unidad: f.unidad }));
+}
+async function guardar() {
+  const e = S.ed, pieza = e.kind === 'pieza', errores = [];
+  if (!e.nombre.trim()) { errores.push(`Escribe el nombre de la ${pieza ? 'pieza' : 'receta'}.`); $('#iNombre').classList.add('err'); }
+  const porc = pieza ? 1 : parseInt(e.porciones_base, 10);
+  if (!pieza && (!porc || porc <= 0)) { errores.push('Indica cuántas porciones rinde.'); $('#iPorc').classList.add('err'); }
+  const filas = e.filas.filter(f => f.nombre.trim());
+  if (pieza && e.forma === 'comprada') {
+    if (!(num(e.compra.precio) > 0)) { errores.push('Escribe cuánto pagaste.'); $('#iCPrecio').classList.add('err'); }
+    if (!(num(e.compra.piezas) > 0)) { errores.push('Indica cuántas piezas traía.'); $('#iCPiezas').classList.add('err'); }
+  } else validarFilas(filas, pieza ? 'material' : 'ingrediente', errores);
+  if (errores.length) { toast('err', 'Falta un dato.', errores[0]); return; }
+
+  const btn = $('#btnGuardar'), txt = btn.textContent; btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    let lineas;
+    if (pieza && e.forma === 'comprada') {
+      const precio = num(e.compra.precio), piezas = num(e.compra.piezas);
+      let ing = e.compra.ing;
+      if (!ing) {
+        ing = await api.crearIngrediente({ nombre: e.nombre.trim(), unidad: 'pz', precio_actual: precio, cantidad_presentacion: piezas, tipo: e.tipo === 'topper' ? 'Topper' : 'Decoracion', estado: 'activo' });
+        S.ingredientes.push(ing);
+      } else if (precio !== Number(ing.precio_actual || 0) || piezas !== Number(ing.cantidad_presentacion || 0) || ing.unidad !== 'pz') {
+        ing = await api.actualizarPrecio(ing.id, precio, piezas, ing.unidad);
+      }
+      e.compra.ing = ing;
+      lineas = [{ id: e.compra.lineaId, ingrediente_id: ing.id, cantidad: 1, unidad: ing.unidad === 'pz' ? 'pz' : ing.unidad }];
+    } else {
+      lineas = await lineasDesdeFilas(filas);
+    }
+    const quitar = e.originales.filter(id => !lineas.some(l => l.id === id));
+    const r = await api.guardarReceta({ id: e.id, nombre: e.nombre.trim(), tipo: e.tipo, porciones_base: porc,
+      rendimiento_cantidad: pieza ? null : num(e.rendimiento_cantidad) || null, rendimiento_unidad: !pieza && num(e.rendimiento_cantidad) ? e.rendimiento_unidad : null,
+      descripcion: e.descripcion.trim() || null, forma_obtencion: pieza ? e.forma : null,
+      ref_diametro_cm: !pieza && num(e.ref_diametro_cm) > 0 && num(e.ref_panes) > 0 ? num(e.ref_diametro_cm) : null, ref_panes: !pieza && num(e.ref_diametro_cm) > 0 && num(e.ref_panes) > 0 ? num(e.ref_panes) : null,
+      se_renta: pieza && !!e.se_renta, precio_renta: pieza && e.se_renta && num(e.precio_renta) != null ? num(e.precio_renta) : null,
+      deposito: pieza && e.se_renta && num(e.deposito) != null ? num(e.deposito) : null, precio_venta: pieza ? num(e.precio_venta) : null }, lineas, quitar);
+    // Foto: subir la nueva y/o quitar la anterior
+    let fotoError = null;
+    try {
+      if (e.fotoBlob) {
+        const path = await api.subirFoto(r.id, e.fotoBlob);
+        await api.setFoto(r.id, path);
+        S.fotos[path] = e.fotoPreview;
+        if (e.foto_path && e.foto_path !== path) await api.borrarFoto(e.foto_path).catch(() => {});
+      } else if (e.quitarFoto && e.foto_path) {
+        await api.setFoto(r.id, null);
+        await api.borrarFoto(e.foto_path).catch(() => {});
+      }
+    } catch (x) { fotoError = x.message; }
+    if (fotoError) toast('warn', `${pieza ? 'Pieza guardada' : 'Receta guardada'}, sin foto.`, `No se pudo subir la foto: ${fotoError}`);
+    else toast('ok', pieza ? 'Pieza guardada.' : 'Receta guardada.', `${r.nombre} ya aparece en ${pieza ? 'toppers y decoración' : 'tus recetas'}.`);
+    if (pieza) S.filtroP = 'todas'; else S.filtroR = 'todas';
+    if (S.retornoCot) volverACot(r); else go(pieza ? 'piezas' : 'recetas');
+  } catch (x) {
+    toast('err', 'No se pudo guardar.', x.message); btn.disabled = false; btn.textContent = txt;
+  }
+}
+async function borrar() {
+  const e = S.ed, pieza = e.kind === 'pieza';
+  if (!confirm(`¿Eliminar ${pieza ? 'la pieza' : 'la receta'} "${e.nombre}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    await api.borrarReceta(e.id);
+    if (e.foto_path) await api.borrarFoto(e.foto_path).catch(() => {});
+    toast('ok', pieza ? 'Pieza eliminada.' : 'Receta eliminada.', ''); if (S.retornoCot) volverACot(null); else go(pieza ? 'piezas' : 'recetas');
+  } catch (x) { toast('err', 'No se pudo eliminar.', x.message.includes('foreign key') ? 'Ya se usa en una cotización.' : x.message); }
+}
+
+/* ===== Ventana emergente ===== */
+function abrirModal(titulo, cuerpo, textoOk) {
+  return new Promise(resolve => {
+    const fondo = document.createElement('div');
+    fondo.className = 'modal-fondo';
+    fondo.innerHTML = `<form class="modal panel" role="dialog" aria-modal="true" aria-label="${esc(titulo)}">
+      <h2>${esc(titulo)}</h2>${cuerpo}
+      <div class="modal-err" hidden></div>
+      <div class="modal-acc"><button type="button" class="btn btn-ghost" data-cancel>Cancelar</button><button type="submit" class="btn btn-primary">${esc(textoOk)}</button></div>
+    </form>`;
+    document.body.appendChild(fondo);
+    const form = fondo.querySelector('form');
+    const cerrar = v => { fondo.remove(); document.removeEventListener('keydown', esc_); resolve(v); };
+    const esc_ = ev => { if (ev.key === 'Escape') cerrar(null); };
+    document.addEventListener('keydown', esc_);
+    fondo.addEventListener('mousedown', ev => { if (ev.target === fondo) cerrar(null); });
+    form.querySelector('[data-cancel]').onclick = () => cerrar(null);
+    form.error = msg => { const e = form.querySelector('.modal-err'); e.hidden = !msg; e.innerHTML = msg ? `<div class="note note-err"><b>Falta un dato.</b><span>${esc(msg)}</span></div>` : ''; };
+    form.cerrar = cerrar;
+    const primero = form.querySelector('input'); if (primero) primero.focus();
+    abrirModal.ultimo = form;
+  });
+}
+
+/* Nueva unidad: se puede crear desde cualquier lista de unidades */
+async function nuevaUnidad() {
+  const p = abrirModal('Nueva unidad', `
+    <div class="field"><label for="uClave">Nombre de la unidad</label><div class="inp"><input id="uClave" maxlength="20" placeholder="Ej. taza, cucharada, lata, bolsa"></div></div>
+    <div class="field"><span class="lbl">¿A cuánto equivale?</span>
+      <label class="check" style="font-weight:500"><input type="radio" name="uModo" value="eq" checked><span>1 unidad equivale a…</span></label>
+      <div class="inp" id="uEqBox" style="margin-left:32px"><input id="uEq" inputmode="decimal" placeholder="240"><select id="uBase" style="flex:0 0 72px"><option value="ml">ml</option><option value="g">g</option><option value="pz">pz</option></select></div>
+      <span class="sug" style="margin-left:32px">Ej. 1 taza = 240 ml · 1 cucharada = 15 ml · 1 bolsa = 12 pz</span>
+      <label class="check" style="font-weight:500;margin-top:8px"><input type="radio" name="uModo" value="sin"><span>No se convierte<small>Se cuenta tal cual (ej. lata, rollo). Solo combina con insumos que usen la misma unidad.</small></span></label>
+    </div>`, 'Crear unidad');
+  const form = abrirModal.ultimo;
+  form.querySelectorAll('[name=uModo]').forEach(r => r.onchange = () => { form.querySelector('#uEqBox').style.opacity = form.querySelector('[name=uModo]:checked').value === 'eq' ? 1 : .4; });
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const clave = form.querySelector('#uClave').value.trim().toLowerCase();
+    const modo = form.querySelector('[name=uModo]:checked').value, eq = num(form.querySelector('#uEq').value), base = form.querySelector('#uBase').value;
+    if (!clave) return form.error('Escribe el nombre de la unidad.');
+    if (UNIDAD_BASE_INFO[clave] || S.unidades.some(u => u.clave === clave)) return form.error(`La unidad "${clave}" ya existe.`);
+    if (modo === 'eq' && !(eq > 0)) return form.error('Escribe a cuánto equivale (o elige "No se convierte").');
+    const btn = form.querySelector('[type=submit]'); btn.disabled = true;
+    try {
+      const u = await api.crearUnidad({ clave, equivale: modo === 'eq' ? eq : null, unidad_base: modo === 'eq' ? base : null });
+      S.unidades.push(u); S.unidades.sort((a, b) => a.clave.localeCompare(b.clave));
+      toast('ok', 'Unidad creada.', modo === 'eq' ? `1 ${clave} = ${eq} ${base}` : `"${clave}" se cuenta tal cual.`);
+      form.cerrar(clave);
+    } catch (x) { form.error(x.message); btn.disabled = false; }
+  };
+  return p;
+}
+// Interceptar "+ Nueva unidad…" en cualquier lista de unidades
+document.addEventListener('focusin', ev => { if (ev.target.matches?.('select[data-unit]')) ev.target.dataset.prev = ev.target.value; });
+['input', 'change'].forEach(tipo => document.addEventListener(tipo, async ev => {
+  const sel = ev.target;
+  if (!sel.matches?.('select[data-unit]') || sel.value !== '__nueva') return;
+  ev.stopImmediatePropagation();
+  const prev = sel.dataset.prev || 'g';
+  sel.value = prev;
+  if (tipo === 'change') return;
+  const clave = await nuevaUnidad();
+  document.querySelectorAll('select[data-unit]').forEach(s => { const v = s.value; s.innerHTML = opcionesUnidad(v); s.value = v; });
+  if (clave && document.body.contains(sel)) {
+    sel.innerHTML = opcionesUnidad(clave); sel.value = clave; sel.dataset.prev = clave;
+    sel.dispatchEvent(new Event('input', { bubbles: true })); sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  sel.focus();
+}, true));
+
+/* ===== Insumos ===== */
+const TIPOS_INSUMO = ['Ingrediente','Relleno','Cobertura','Decoracion','Empaque','Material','Otro'];
+function renderInsumos() {
+  const sin = i => !Number(i.precio_actual) || !Number(i.cantidad_presentacion);
+  const lista = S.ingredientes.filter(i => !esInsumoDePieza(i)).sort((a, b) => (sin(b) - sin(a)) || a.nombre.localeCompare(b.nombre));
+  $('#app').innerHTML = `
+  <div class="head"><div><span class="muted small">${lista.length} insumos · ${lista.filter(sin).length} sin precio</span><h1>Insumos</h1></div>
+    <button class="btn btn-primary" id="btnNuevoIns">+ Nuevo insumo</button></div>
+  <p class="muted" style="margin:-8px 0 16px;max-width:640px">Captura lo que pagas por cada paquete, lo que trae y en qué unidad. El costo por unidad y todas las recetas se actualizan solos.</p>
+  <div class="panel">
+    ${lista.length ? `<table class="tbl"><thead><tr><th>Insumo</th><th>Precio paquete</th><th>Contenido del paquete</th><th>Costo por unidad</th><th></th></tr></thead>
+    <tbody>${lista.map(i => `
+      <tr data-iid="${esc(i.id)}">
+        <td class="t-name"><button type="button" class="ins-nombre" data-edit><b>${esc(i.nombre)}</b> <span class="ins-edit">Editar</span></button><span class="ins-meta">${esc(i.tipo === 'Decoracion' ? 'Decoración' : i.tipo || '')}${i.proveedor ? ' · ' + esc(i.proveedor) : ''}</span>${sin(i) ? '<span class="pill pill-warn">Sin precio</span>' : i.estado === 'pendiente_revision' ? '<span class="pill pill-warn">Por revisar</span>' : '<span class="pill pill-ok">Al día</span>'}</td>
+        <td><span class="mlabel">Precio paquete</span><div class="inp ${sin(i) ? 'warn' : ''}"><span class="affix">$</span><input data-p inputmode="decimal" value="${Number(i.precio_actual) ? esc(i.precio_actual) : ''}" placeholder="0.00"></div></td>
+        <td><span class="mlabel">Contenido</span><div class="inp"><input data-q inputmode="decimal" value="${esc(i.cantidad_presentacion ?? '')}" placeholder="0"><select data-unit data-u-sel aria-label="Unidad" style="flex:0 0 84px;padding:0 6px">${opcionesUnidad(i.unidad)}</select></div></td>
+        <td class="num"><span class="mlabel">Costo por unidad</span><span data-u>${unitario(i.precio_actual, i.cantidad_presentacion, i.unidad)}</span></td>
+        <td><button class="btn btn-secondary btn-sm" data-save>Guardar</button></td>
+      </tr>`).join('')}</tbody></table>` : '<div class="empty">Todavía no tienes insumos.</div>'}
+  </div>`;
+  $('#btnNuevoIns').onclick = nuevoInsumo;
+  document.querySelectorAll('tr[data-iid] [data-edit]').forEach(b => b.onclick = () => editarInsumo(S.ingredientes.find(x => x.id === b.closest('tr').dataset.iid)));
+  document.querySelectorAll('tr[data-iid]').forEach(tr => {
+    const i = S.ingredientes.find(x => x.id === tr.dataset.iid);
+    const val = () => ({ p: num(tr.querySelector('[data-p]').value), q: num(tr.querySelector('[data-q]').value), u: tr.querySelector('[data-u-sel]').value });
+    const upd = () => { const v = val(); tr.querySelector('[data-u]').innerHTML = unitario(v.p, v.q, v.u); };
+    tr.querySelector('[data-p]').oninput = upd; tr.querySelector('[data-q]').oninput = upd; tr.querySelector('[data-u-sel]').onchange = upd;
+    tr.querySelector('[data-save]').onclick = async ev => {
+      const { p, q, u } = val();
+      if (!(p > 0) || !(q > 0)) { toast('err', 'Falta un dato.', `Escribe precio y contenido del paquete de ${i.nombre}.`); return; }
+      ev.target.disabled = true;
+      try { Object.assign(i, await api.actualizarPrecio(i.id, p, q, u)); toast('ok', 'Insumo guardado.', `${i.nombre}: ${money(p)} por ${q} ${u}.`); renderInsumos(); }
+      catch (x) { toast('err', 'No se pudo guardar.', x.message); ev.target.disabled = false; }
+    };
+  });
+}
+async function editarInsumo(i) {
+  const p = abrirModal('Editar insumo', `
+    <div class="field"><label for="eiNombre">Nombre</label><div class="inp"><input id="eiNombre" value="${esc(i.nombre)}"></div></div>
+    <div class="modal-grid">
+      <div class="field"><label for="eiTipo">Tipo</label><div class="inp"><select id="eiTipo">${TIPOS_INSUMO.map(t => `<option value="${t}" ${t === i.tipo ? 'selected' : ''}>${t === 'Decoracion' ? 'Decoración' : t}</option>`).join('')}</select></div></div>
+      <div class="field"><label for="eiProv">Proveedor</label><div class="inp"><input id="eiProv" value="${esc(i.proveedor || '')}" placeholder="Ej. Costco"></div></div>
+    </div>
+    <p class="sug" style="margin:0">El precio, el contenido y la unidad se cambian en la lista.</p>`, 'Guardar cambios');
+  const form = abrirModal.ultimo;
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const nombre = form.querySelector('#eiNombre').value.trim(), tipo = form.querySelector('#eiTipo').value, proveedor = form.querySelector('#eiProv').value.trim() || null;
+    if (!nombre) return form.error('Escribe el nombre del insumo.');
+    if (S.ingredientes.some(x => x.id !== i.id && norm(x.nombre) === norm(nombre))) return form.error(`Ya tienes un insumo llamado "${nombre}".`);
+    try { Object.assign(i, await api.actualizarInsumo(i.id, { nombre, tipo, proveedor })); toast('ok', 'Insumo actualizado.', nombre); form.cerrar(i); renderInsumos(); }
+    catch (x) { form.error(x.message); }
+  };
+  return p;
+}
+async function nuevoInsumo() {
+  const p = abrirModal('Nuevo insumo', `
+    <div class="field"><label for="nNombre">Nombre</label><div class="inp"><input id="nNombre" placeholder="Ej. Queso crema Philadelphia"></div></div>
+    <div class="modal-grid">
+      <div class="field"><label for="nPrecio">Precio del paquete</label><div class="inp"><span class="affix">$</span><input id="nPrecio" inputmode="decimal" placeholder="0.00"></div></div>
+      <div class="field"><label for="nCont">Contenido</label><div class="inp"><input id="nCont" inputmode="decimal" placeholder="Ej. 190"><select data-unit id="nUnidad" aria-label="Unidad" style="flex:0 0 96px">${opcionesUnidad('g')}</select></div></div>
+    </div>
+    <div class="modal-grid">
+      <div class="field"><label for="nTipo">Tipo</label><div class="inp"><select id="nTipo">${TIPOS_INSUMO.map(t => `<option value="${t}">${t === 'Decoracion' ? 'Decoración' : t}</option>`).join('')}</select></div></div>
+      <div class="field"><label for="nProv">Proveedor <span class="muted" style="font-weight:400">(opcional)</span></label><div class="inp"><input id="nProv" placeholder="Ej. Costco"></div></div>
+    </div>`, 'Guardar insumo');
+  const form = abrirModal.ultimo;
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const nombre = form.querySelector('#nNombre').value.trim(), precio = num(form.querySelector('#nPrecio').value), cont = num(form.querySelector('#nCont').value);
+    const unidad = form.querySelector('#nUnidad').value, tipo = form.querySelector('#nTipo').value, proveedor = form.querySelector('#nProv').value.trim() || null;
+    if (!nombre) return form.error('Escribe el nombre del insumo.');
+    if (S.ingredientes.some(i => norm(i.nombre) === norm(nombre))) return form.error(`Ya tienes un insumo llamado "${nombre}".`);
+    if (!(cont > 0)) return form.error('Escribe cuánto trae el paquete.');
+    const btn = form.querySelector('[type=submit]'); btn.disabled = true;
+    try {
+      const i = await api.crearIngrediente({ nombre, unidad, precio_actual: precio || 0, cantidad_presentacion: cont, tipo, proveedor, estado: 'activo' });
+      S.ingredientes.push(i);
+      toast('ok', 'Insumo guardado.', `${nombre} ya se puede usar en tus recetas.`);
+      form.cerrar(i); renderInsumos();
+    } catch (x) { form.error(x.message); btn.disabled = false; }
+  };
+  return p;
+}
+function unitario(p, q, u) {
+  p = Number(p); q = Number(q);
+  if (!p || !q) return '<span class="muted">—</span>';
+  const v = p / q;
+  if ((u === 'g' || u === 'ml') && v < 1) return `${money(v * 1000)} <span class="muted small">por ${u === 'g' ? 'kg' : 'l'}</span>`;
+  return `${money(v)} <span class="muted small">por ${esc(u)}</span>`;
+}
+
+/* ===== Cotizador: cálculos ===== */
+const ALTO_PAN_CM = 3;   // alto aproximado de un pan, para estimar el betún de los lados
+const PASOS = ['Tamaño', 'Bizcocho', 'Relleno', 'Betún', 'Toppers', 'Decoración', 'Empaque', 'Resumen'];
+const ceilRed = v => { const r = Number(CFG.redondeo) || 10; return Math.ceil(+(v / r).toFixed(6)) * r; };
+const fmtN = (v, d = 1) => Number(v).toLocaleString('es-MX', { maximumFractionDigits: d });
+function porcionesMolde(d) {
+  d = Number(d);
+  const t = S.moldes.find(m => Number(m.diametro_cm) === d);
+  if (t) return [Number(t.porciones_min), Number(t.porciones_max)];
+  if (!S.moldes.length) return [Math.round(d * d / 40), Math.round(d * d / 20)];
+  const ref = S.moldes.reduce((a, m) => !a || Math.abs(m.diametro_cm - d) < Math.abs(a.diametro_cm - d) ? m : a, null);
+  const k = (d / ref.diametro_cm) ** 2;
+  return [Math.max(1, Math.round(ref.porciones_min * k)), Math.max(1, Math.round(ref.porciones_max * k))];
+}
+function porcionesEstructura(pisos) {
+  return pisos.reduce((a, p) => { const [mn, mx] = porcionesMolde(p.d); return [a[0] + mn * p.panes / 2, a[1] + mx * p.panes / 2]; }, [0, 0]).map(Math.round);
+}
+function descEstructura(pisos) {
+  return pisos.map((p, i) => `${pisos.length > 1 ? `Piso ${i + 1}: ` : ''}${fmtN(p.d)} cm · ${p.panes} pan${p.panes == 1 ? '' : 'es'}${p.panes >= 4 ? ' (doble altura)' : ''}`).join(' · ');
+}
+function superficieBetun(d, panes) { return d * d / 4 + d * panes * ALTO_PAN_CM; }
+// Cuántas tandas de la receta lleva este pastel. Devuelve { tandas, exacto }
+function tandasReceta(r, pisos) {
+  const ref = Number(r.ref_diametro_cm) > 0 && Number(r.ref_panes) > 0;
+  const [mn, mx] = porcionesEstructura(pisos), porc = (mn + mx) / 2;
+  const porPorciones = { tandas: porc / (Number(r.porciones_base) || 1), exacto: false };
+  if (!ref) return r.tipo === 'relleno' && !pisos.some(p => p.panes > 1) ? { tandas: 0, exacto: false } : porPorciones;
+  const rd = Number(r.ref_diametro_cm), rp = Number(r.ref_panes);
+  if (r.tipo === 'bizcocho') return { tandas: pisos.reduce((a, p) => a + p.panes * p.d * p.d, 0) / (rp * rd * rd), exacto: true };
+  if (r.tipo === 'relleno') return { tandas: pisos.reduce((a, p) => a + Math.max(p.panes - 1, 0) * p.d * p.d, 0) / (rp * rd * rd), exacto: true };
+  if (r.tipo === 'betun') return { tandas: pisos.reduce((a, p) => a + superficieBetun(p.d, p.panes), 0) / superficieBetun(rd, rp), exacto: true };
+  return porPorciones;
+}
+function sugerenciasTamano(P) {
+  P = Number(P); if (!(P > 0)) return [];
+  const moldes = [...S.moldes].sort((a, b) => a.diametro_cm - b.diametro_cm), out = [];
+  const cabe = pisos => { const [mn, mx] = porcionesEstructura(pisos); return P >= mn && P <= mx; };
+  moldes.forEach(m => { const p = [{ d: Number(m.diametro_cm), panes: 2 }]; if (cabe(p)) out.push({ pisos: p, nota: 'Altura normal' }); });
+  moldes.forEach(m => { const p = [{ d: Number(m.diametro_cm), panes: 4 }]; if (cabe(p)) out.push({ pisos: p, nota: 'Doble altura (más alto y angosto)' }); });
+  moldes.forEach((a, i) => moldes.slice(i + 1).forEach(b => { const p = [{ d: Number(b.diametro_cm), panes: 2 }, { d: Number(a.diametro_cm), panes: 2 }]; if (cabe(p)) out.push({ pisos: p, nota: 'Dos pisos' }); }));
+  if (!out.length && moldes.length) {
+    const m = moldes.find(m => porcionesMolde(m.diametro_cm)[1] >= P) || moldes[moldes.length - 1];
+    out.push({ pisos: [{ d: Number(m.diametro_cm), panes: 2 }], nota: 'Lo más cercano' });
+  }
+  return out.slice(0, 4);
+}
+function sumaEmpaques(Q) {
+  return Object.entries(Q.empaques || {}).reduce((a, [id, q]) => { const e = S.empaques.find(x => x.id === id); return a + (e ? Number(e.precio) * q : 0); }, 0);
+}
+function calcCotizacion(Q) {
+  const byId = id => S.recetas.find(r => r.receta_id === id);
+  const lineas = [];
+  ['bizcocho', 'relleno', 'betun'].forEach(t => {
+    const r = Q[t] && byId(Q[t]); if (!r) return;
+    const { tandas, exacto } = tandasReceta(r, Q.pisos);
+    lineas.push({ tipo: t, r, tandas, exacto, costo: tandas * Number(r.costo_tanda) });
+  });
+  const piezas = Object.entries(Q.piezas).map(([id, p]) => {
+    const r = byId(id); if (!r || !(p.qty > 0)) return null;
+    const renta = p.modalidad === 'renta' && r.se_renta;
+    const precioU = Number(renta ? r.precio_renta : r.precio_venta) || 0;
+    return { r, qty: p.qty, modalidad: renta ? 'renta' : 'venta', precioU, precio: precioU * p.qty,
+      costo: renta ? 0 : Number(r.costo_tanda) * p.qty, deposito: renta ? (Number(r.deposito) || 0) * p.qty : 0 };
+  }).filter(Boolean);
+  const ingredientes = lineas.reduce((a, l) => a + l.costo, 0);
+  const indirectos = ingredientes * (Number(Q.pctIndirectos) || 0) / 100;
+  const manoObra = (num(Q.horas) || 0) * (Number(CFG.tarifa_mano_obra_hora) || 0);
+  const empaque = num(Q.empaque) || 0, otros = num(Q.otros) || 0, merma = num(Q.merma) || 0;
+  const base = ingredientes + indirectos + manoObra + empaque + otros + merma;
+  const m = Math.min(Math.max(num(Q.margen) ?? 40, 0), 90);
+  const precioPastel = base / (1 - m / 100);
+  const precioPiezas = piezas.reduce((a, p) => a + p.precio, 0);
+  const costoPiezas = piezas.reduce((a, p) => a + p.costo, 0);
+  const deposito = piezas.reduce((a, p) => a + p.deposito, 0);
+  const sugerido = base || precioPiezas ? ceilRed(precioPastel + precioPiezas) : 0;
+  const final = num(Q.precioFinal) ?? sugerido;
+  const costoTotal = base + costoPiezas;
+  const [pmin, pmax] = porcionesEstructura(Q.pisos);
+  return { lineas, piezas, ingredientes, indirectos, manoObra, empaque, otros, merma, base, margen: m, precioPastel, precioPiezas, costoPiezas,
+    deposito, sugerido, final, costoTotal, utilidad: final - costoTotal, pmin, pmax };
+}
+function mensajeCliente(Q, c, cliente, folio) {
+  const nombre = l => l ? l.r.nombre : null;
+  const get = t => c.lineas.find(l => l.tipo === t);
+  const deco = c.piezas.map(p => `${p.qty > 1 ? p.qty + ' × ' : ''}${p.r.nombre}${p.modalidad === 'renta' ? ' (en renta)' : ''}`);
+  const filas = [
+    cliente ? `Hola ${cliente.nombre.split(' ')[0]}, te comparto la cotización de tu pastel.` : 'Te comparto la cotización de tu pastel.',
+    '',
+    folio ? `Cotización: ${folio}` : null,
+    Q.producto ? `Pastel: ${Q.producto}` : null,
+    `Tamaño: ${descEstructura(Q.pisos)} — aprox. ${c.pmin}–${c.pmax} porciones`,
+    nombre(get('bizcocho')) ? `Sabor: ${nombre(get('bizcocho'))}` : null,
+    nombre(get('relleno')) ? `Relleno: ${nombre(get('relleno'))}` : null,
+    nombre(get('betun')) ? `Betún: ${nombre(get('betun'))}` : null,
+    deco.length ? `Decoración: ${deco.join(', ')}` : null,
+    Object.keys(Q.empaques || {}).length ? `Empaque: ${Object.entries(Q.empaques).map(([id, q]) => { const e = S.empaques.find(x => x.id === id); return e ? (q > 1 ? q + ' × ' : '') + e.nombre : null; }).filter(Boolean).join(', ')}` : null,
+    '',
+    `Precio: ${money(c.final)}`,
+    c.deposito ? `Depósito por piezas en renta: ${money(c.deposito)} (se te devuelve al regresarlas en ${CFG.dias_devolucion} días)` : null,
+    c.deposito ? `Total a pagar: ${money(c.final + c.deposito)}` : null,
+    Q.notas ? '' : null, Q.notas ? `Notas: ${Q.notas}` : null
+  ];
+  return filas.filter(x => x !== null).join('\n').replace(/\n{3,}/g, '\n\n');
+}
+function waLink(texto, tel) {
+  let d = String(tel || '').replace(/\D/g, '');
+  if (d.length === 10) d = '52' + d;
+  return `https://wa.me/${d}?text=${encodeURIComponent(texto)}`;
+}
+
+/* ===== Cotizaciones: lista ===== */
+const ESTADOS_COT = { borrador: 'Borrador', enviada: 'Enviada', aceptada: 'Aceptada', rechazada: 'Rechazada', vencida: 'Vencida' };
+async function renderCotizaciones() {
+  const lista = S.cotizaciones;
+  $('#app').innerHTML = `
+  <div class="head"><div><span class="muted small">${lista.length} cotizaci${lista.length === 1 ? 'ón' : 'ones'}</span><h1>Cotizaciones</h1></div>
+    <button class="btn btn-primary" id="btnNuevaCot">+ Nueva cotización</button></div>
+  ${lista.length ? `<div class="cot-list">${lista.map(c => `
+    <button class="cot-item" data-cid="${esc(c.id)}">
+      <span class="cot-main"><b>${esc(c.producto || 'Pastel')}</b><span class="muted small">${esc(c.folio)} · ${esc(c.clientes?.nombre || 'Sin cliente')} · ${esc(fechaCorta(c.fecha_cotizacion))}${c.porciones ? ' · ' + c.porciones + ' porc.' : ''}</span></span>
+      <span class="cot-side"><b class="num">${money(c.precio_cotizado)}</b><span class="pill est-${esc(c.estado)}">${ESTADOS_COT[c.estado] || esc(c.estado)}</span></span>
+    </button>`).join('')}</div>`
+  : `<div class="empty">Todavía no hay cotizaciones.<br><button class="btn btn-secondary" style="margin-top:16px" id="btnNuevaCot2">+ Hacer la primera</button></div>`}`;
+  $('#btnNuevaCot').onclick = () => { if (S.cot && !confirm('Tienes una cotización sin guardar. ¿Empezar una nueva y descartarla?')) return; abrirCotizador(null); };
+  const b2 = $('#btnNuevaCot2'); if (b2) b2.onclick = () => abrirCotizador(null);
+  document.querySelectorAll('[data-cid]').forEach(b => b.onclick = () => verCotizacion(b.dataset.cid));
+}
+function fechaCorta(f) { if (!f) return ''; const [y, m, d] = String(f).slice(0, 10).split('-'); return `${d}/${m}/${y}`; }
+
+/* ===== Cotizador ===== */
+function cotVacia() {
+  return { id: null, folio: null, cliente_id: '', producto: '', porcionesPedidas: '', pisos: [{ d: 20, panes: 2 }],
+    bizcocho: null, relleno: null, betun: null, piezas: {}, empaques: {}, horas: '3', empaque: '', otros: '', merma: '', margen: String(CFG.margen_default ?? 40),
+    pctIndirectos: Number(CFG.pct_indirectos ?? 10), precioFinal: '', notas: '', estado: 'borrador', paso: 0 };
+}
+async function abrirCotizador(id) {
+  $('#app').innerHTML = '<p class="muted">Cargando…</p>';
+  await loadRecetas();
+  let Q = cotVacia();
+  if (id) {
+    const c = await api.cotizacion(id);
+    Q = { ...Q, id: c.id, folio: c.folio, cliente_id: c.cliente_id || '', producto: c.producto || '', porcionesPedidas: c.porciones || '',
+      pisos: (c.estructura || []).map(p => ({ d: Number(p.diametro), panes: Number(p.panes) })),
+      horas: String(c.horas_mano_obra ?? 0), empaque: Number(c.costo_empaque) ? String(c.costo_empaque) : '', otros: Number(c.costo_otros) ? String(c.costo_otros) : '', merma: Number(c.costo_merma) ? String(c.costo_merma) : '', margen: String(c.margen_objetivo ?? 40),
+      pctIndirectos: Number(c.pct_indirectos ?? 10), precioFinal: Number(c.precio_cotizado) !== Number(c.precio_sugerido) ? String(c.precio_cotizado) : '',
+      notas: c.notas || '', estado: c.estado, paso: PASOS.length - 1 };
+    if (!Q.pisos.length) Q.pisos = [{ d: 20, panes: 2 }];
+    (c.detalle || []).forEach(l => {
+      if (!l.receta_id && !l.empaque_id) return;
+      if (['bizcocho', 'relleno', 'betun'].includes(l.tipo)) Q[l.tipo] = l.receta_id;
+      if (l.tipo === 'topper' || l.tipo === 'decoracion') Q.piezas[l.receta_id] = { qty: Number(l.cantidad) || 1, modalidad: l.modalidad || 'venta' };
+      if (l.tipo === 'empaque' && l.empaque_id) Q.empaques[l.empaque_id] = Number(l.cantidad) || 1;
+    });
+  }
+  S.cot = Q; renderCotizador();
+}
+function renderCotizador() {
+  const Q = S.cot;
+  $('#app').innerHTML = `
+  <div class="head"><div><a href="#" class="small muted" id="volverCot">← Cotizaciones</a><h1>${Q.id ? 'Editar cotización' : 'Nueva cotización'}</h1></div>
+    ${Q.folio ? `<span class="muted small">${esc(Q.folio)}</span>` : ''}</div>
+  <ol class="steps" id="pasos">${PASOS.map((p, i) => `<li><button type="button" class="step ${i < Q.paso ? 'is-done' : ''} ${i === Q.paso ? 'is-current' : ''}" data-paso="${i}" ${i === Q.paso ? 'aria-current="step"' : ''}><i>${i < Q.paso ? '✓' : i + 1}</i>${p}</button></li>`).join('')}</ol>
+  <div class="ed" style="margin-top:20px">
+    <div><div class="panel" id="pasoBox"></div>
+      <div class="pie-pasos">
+        <button class="btn btn-secondary" id="btnAnt" ${Q.paso === 0 ? 'hidden' : ''}>← ${PASOS[Q.paso - 1] || ''}</button><span></span>
+        ${Q.paso < PASOS.length - 1 ? `<button class="btn btn-primary" id="btnSig">Siguiente: ${PASOS[Q.paso + 1]} →</button>` : `<button class="btn btn-primary" id="btnGuardarCot">Guardar cotización</button>`}
+      </div>
+    </div>
+    <aside class="side" id="resumenCot"></aside>
+  </div>
+  <button type="button" class="barra-precio" id="barraPrecio"></button>`;
+  $('#volverCot').onclick = ev => { ev.preventDefault(); go('cotizaciones'); };
+  document.querySelectorAll('[data-paso]').forEach(b => b.onclick = () => irPaso(Number(b.dataset.paso)));
+  const a = $('#btnAnt'); if (a) a.onclick = () => irPaso(Q.paso - 1);
+  const s = $('#btnSig'); if (s) s.onclick = () => irPaso(Q.paso + 1);
+  const g = $('#btnGuardarCot'); if (g) g.onclick = guardarCotizacion;
+  renderPaso(); renderResumenCot();
+  const cur = document.querySelector('.step.is-current'); if (cur) cur.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+function irPaso(i) {
+  const Q = S.cot;
+  if (i > Q.paso && Q.paso <= 0 && !Q.pisos.length) { toast('err', 'Falta el tamaño.', 'Agrega al menos un piso.'); return; }
+  if (i > 1 && !Q.bizcocho && i > Q.paso) { toast('err', 'Falta el bizcocho.', 'Elige el sabor del bizcocho.'); Q.paso = 1; renderCotizador(); return; }
+  Q.paso = Math.max(0, Math.min(PASOS.length - 1, i)); renderCotizador(); window.scrollTo(0, 0);
+}
+function opcionesMolde(sel) {
+  const ds = [...new Set([...S.moldes.map(m => Number(m.diametro_cm)), Number(sel)])].filter(Boolean).sort((a, b) => a - b);
+  return ds.map(d => `<option value="${d}" ${d === Number(sel) ? 'selected' : ''}>${fmtN(d)} cm</option>`).join('') + '<option value="__otro">Otro…</option>';
+}
+function renderPaso() {
+  const Q = S.cot, box = $('#pasoBox');
+  const recetasDe = t => S.recetas.filter(r => r.tipo === t && r.estado !== 'inactivo');
+  if (Q.paso === 0) {
+    const sug = sugerenciasTamano(Q.porcionesPedidas);
+    const [mn, mx] = porcionesEstructura(Q.pisos);
+    box.innerHTML = `
+      <div class="meta meta-cli">
+        <div class="field"><label for="qCliente">Cliente <span class="muted" style="font-weight:400">(opcional)</span></label>
+          <div style="display:flex;gap:8px"><div class="inp" style="flex:1"><select id="qCliente"><option value="">Sin cliente</option>${S.clientes.map(c => `<option value="${esc(c.id)}" ${c.id === Q.cliente_id ? 'selected' : ''}>${esc(c.nombre)}</option>`).join('')}</select></div>
+          <button type="button" class="btn btn-secondary btn-sm" id="qNuevoCli" style="min-height:48px">+ Nuevo</button></div></div>
+        <div class="field"><label for="qProducto">Nombre del pastel</label><div class="inp"><input id="qProducto" value="${esc(Q.producto)}" placeholder="Ej. Cumpleaños de Sofía"></div></div>
+      </div>
+      <div class="field" style="margin-top:20px"><label for="qPorc">¿Para cuántas porciones lo quiere?</label>
+        <div class="inp" style="max-width:220px"><input id="qPorc" inputmode="numeric" value="${esc(Q.porcionesPedidas)}" placeholder="Ej. 20"><span class="affix">porciones</span></div></div>
+      ${sug.length ? `<div class="field" style="margin-top:16px"><span class="lbl">Sugerencias</span><div class="sug-grid">${sug.map((s, i) => {
+          const [a, b] = porcionesEstructura(s.pisos); const activo = JSON.stringify(s.pisos) === JSON.stringify(Q.pisos);
+          return `<button type="button" class="opt" data-sug="${i}" aria-pressed="${activo}"><span class="opt-name">${esc(descEstructura(s.pisos))}</span><span class="opt-cost">${esc(s.nota)} · ${a}–${b} porc.</span></button>`; }).join('')}</div></div>` : ''}
+      <div class="field" style="margin-top:20px"><span class="lbl">Cómo va a ser el pastel</span>
+        <div class="pisos">${Q.pisos.map((p, i) => `
+          <div class="piso" data-i="${i}">
+            <span class="piso-n">${Q.pisos.length > 1 ? `Piso ${i + 1}${i === 0 ? ' (abajo)' : ''}` : 'Molde'}</span>
+            <div class="inp" style="width:120px"><select data-molde>${opcionesMolde(p.d)}</select></div>
+            <div class="qty"><button type="button" data-menos aria-label="Menos panes">−</button><output>${p.panes}</output><button type="button" data-mas aria-label="Más panes">+</button></div>
+            <span class="muted small">panes${p.panes >= 4 ? ' · doble altura' : ''}</span>
+            ${Q.pisos.length > 1 ? '<button type="button" class="x" data-quitar aria-label="Quitar piso">×</button>' : ''}
+          </div>`).join('')}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">
+          <button type="button" class="btn btn-secondary btn-sm" id="qPiso">+ Agregar piso</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="qMoldes">Editar tabla de moldes</button>
+          <span class="muted small" style="margin-left:auto">Rinde aprox. <b>${mn}–${mx} porciones</b></span>
+        </div>
+        ${num(Q.porcionesPedidas) && (num(Q.porcionesPedidas) < mn || num(Q.porcionesPedidas) > mx) ? `<div class="note note-warn" style="margin-top:10px"><b>Ojo.</b><span>El cliente pidió ${esc(Q.porcionesPedidas)} porciones y este tamaño da ${mn}–${mx}.</span></div>` : ''}
+      </div>`;
+    $('#qCliente').onchange = ev => { Q.cliente_id = ev.target.value; renderResumenCot(); };
+    $('#qNuevoCli').onclick = async () => { const c = await nuevoCliente(); if (c) { Q.cliente_id = c.id; renderPaso(); renderResumenCot(); } };
+    $('#qProducto').oninput = ev => { Q.producto = ev.target.value; };
+    $('#qPorc').oninput = ev => { Q.porcionesPedidas = ev.target.value; clearTimeout(renderPaso.t); renderPaso.t = setTimeout(() => { renderPaso(); const el = $('#qPorc'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }, 450); };
+    document.querySelectorAll('[data-sug]').forEach(b => b.onclick = () => { Q.pisos = structuredClone(sug[Number(b.dataset.sug)].pisos); renderPaso(); renderResumenCot(); });
+    document.querySelectorAll('.piso').forEach(row => {
+      const p = Q.pisos[Number(row.dataset.i)];
+      row.querySelector('[data-molde]').onchange = async ev => {
+        if (ev.target.value === '__otro') {
+          const d = await pedirNumero('Otro molde', '¿De cuántos centímetros es el molde?', 'cm');
+          if (d) { p.d = d; } renderPaso(); renderResumenCot(); return;
+        }
+        p.d = Number(ev.target.value); renderPaso(); renderResumenCot();
+      };
+      row.querySelector('[data-menos]').onclick = () => { p.panes = Math.max(1, p.panes - 1); renderPaso(); renderResumenCot(); };
+      row.querySelector('[data-mas]').onclick = () => { p.panes = Math.min(8, p.panes + 1); renderPaso(); renderResumenCot(); };
+      const q = row.querySelector('[data-quitar]'); if (q) q.onclick = () => { Q.pisos.splice(Number(row.dataset.i), 1); renderPaso(); renderResumenCot(); };
+    });
+    $('#qPiso').onclick = () => { const ult = Q.pisos[Q.pisos.length - 1]; const menor = [...S.moldes].map(m => Number(m.diametro_cm)).filter(d => d < ult.d).pop() || Math.max(10, ult.d - 5); Q.pisos.push({ d: menor, panes: 2 }); renderPaso(); renderResumenCot(); };
+    $('#qMoldes').onclick = editarMoldes;
+    return;
+  }
+  if (Q.paso >= 1 && Q.paso <= 3) {
+    const tipo = ['bizcocho', 'relleno', 'betun'][Q.paso - 1], lista = recetasDe(tipo), opcional = tipo !== 'bizcocho';
+    const titulo = { bizcocho: '¿De qué sabor es el bizcocho?', relleno: '¿Con qué lo rellenamos?', betun: '¿Con qué lo cubrimos?' }[tipo];
+    box.innerHTML = `
+      <div class="row-title"><span class="chip c-${tipo}">${tipoLabel(tipo)}</span><h2>${titulo}</h2></div>
+      <p class="muted small" style="margin:4px 0 14px">Costos para ${esc(descEstructura(Q.pisos))}</p>
+      ${lista.length || opcional ? `<div class="opts">
+        ${opcional ? `<button type="button" class="opt" data-rec="" aria-pressed="${!Q[tipo]}"><span class="opt-name">Sin ${tipoLabel(tipo).toLowerCase()}</span><span class="opt-cost">$0.00</span></button>` : ''}
+        ${lista.map(r => { const t = tandasReceta(r, Q.pisos); return `<button type="button" class="opt" data-rec="${esc(r.receta_id)}" aria-pressed="${Q[tipo] === r.receta_id}">
+            <span class="opt-name">${esc(r.nombre)}</span><span class="opt-cost">+ ${money(t.tandas * r.costo_tanda)}</span>
+            <span class="opt-meta">${fmtN(t.tandas, 2)} tanda${t.tandas === 1 ? '' : 's'}${t.exacto ? ' · por molde' : ' · aproximado'}</span></button>`; }).join('')}
+      </div>` : ''}
+      ${!lista.length ? `<div class="empty" style="margin-top:12px">No tienes recetas de ${tipoLabel(tipo).toLowerCase()}. </div>` : ''}
+      <button type="button" class="btn btn-ghost btn-sm" id="nuevaDesdeCot" style="margin-top:12px">+ Agregar una receta de ${tipoLabel(tipo).toLowerCase()}</button>
+      ${(() => { const faltan = lista.filter(r => !(r.ref_diametro_cm > 0 && r.ref_panes > 0)); return faltan.length ? `<p class="sug" style="margin-top:14px">Cálculo aproximado en: <b>${faltan.map(r => esc(r.nombre)).join(', ')}</b>. ${faltan.length === 1 ? 'Esa receta todavía no dice' : 'Esas recetas todavía no dicen'} para cuántos panes de qué molde alcanza${faltan.length === 1 ? '' : 'n'}; anótalo en Recetas para que el costo sea exacto.</p>` : ''; })()}`;
+    document.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => { Q[tipo] = b.dataset.rec || null; renderPaso(); renderResumenCot(); });
+    $('#nuevaDesdeCot').onclick = () => crearDesdeCot('receta', tipo);
+    return;
+  }
+  if (Q.paso === 4 || Q.paso === 5) {
+    const tipo = Q.paso === 4 ? 'topper' : 'decoracion', lista = recetasDe(tipo);
+    box.innerHTML = `
+      <div class="row-title"><span class="chip c-${tipo}">${tipoLabel(tipo)}</span><h2>${tipo === 'topper' ? '¿Lleva toppers?' : '¿Qué decoración lleva?'}</h2></div>
+      <p class="muted small" style="margin:4px 0 14px">Toca para agregar. Puedes elegir varias y la cantidad de cada una.</p>
+      ${lista.length ? `<div class="piezas-sel">${lista.map(r => { const p = Q.piezas[r.receta_id]; const on = p && p.qty > 0; return `
+        <div class="pz-sel ${on ? 'on' : ''}" data-pz="${esc(r.receta_id)}">
+          ${fotoHtml(S.fotos[r.foto_path], r.nombre, 'pz-foto')}
+          <div class="pz-info"><b>${esc(r.nombre)}</b><span class="muted small">Venta ${money(r.precio_venta)}${r.se_renta ? ` · Renta ${money(r.precio_renta)} + dep. ${money(r.deposito)}` : ''}</span>
+            ${on && r.se_renta ? `<div class="seg seg-sm" role="radiogroup"><button type="button" role="radio" data-mod="venta" aria-checked="${p.modalidad !== 'renta'}">Se vende</button><button type="button" role="radio" data-mod="renta" aria-checked="${p.modalidad === 'renta'}">Se renta</button></div>` : ''}
+          </div>
+          ${on ? `<div class="qty"><button type="button" data-menos aria-label="Menos">−</button><output>${p.qty}</output><button type="button" data-mas aria-label="Más">+</button></div>`
+               : '<button type="button" class="btn btn-secondary btn-sm" data-add>Agregar</button>'}
+        </div>`; }).join('')}</div>`
+      : `<div class="empty">No tienes ${tipo === 'topper' ? 'toppers' : 'decoraciones'} registrados. Puedes seguir sin ${tipo === 'topper' ? 'toppers' : 'decoración'}.</div>`}
+      <button type="button" class="btn btn-ghost btn-sm" id="nuevaDesdeCot" style="margin-top:12px">+ Agregar ${tipo === 'topper' ? 'un topper nuevo' : 'una decoración nueva'}</button>`;
+    document.querySelectorAll('[data-pz]').forEach(row => {
+      const id = row.dataset.pz, r = S.recetas.find(x => x.receta_id === id);
+      const add = row.querySelector('[data-add]'); if (add) add.onclick = () => { Q.piezas[id] = { qty: 1, modalidad: r.se_renta ? 'renta' : 'venta' }; renderPaso(); renderResumenCot(); };
+      const mas = row.querySelector('[data-mas]'); if (mas) mas.onclick = () => { Q.piezas[id].qty++; renderPaso(); renderResumenCot(); };
+      const men = row.querySelector('[data-menos]'); if (men) men.onclick = () => { if (--Q.piezas[id].qty <= 0) delete Q.piezas[id]; renderPaso(); renderResumenCot(); };
+      row.querySelectorAll('[data-mod]').forEach(b => b.onclick = () => { Q.piezas[id].modalidad = b.dataset.mod; renderPaso(); renderResumenCot(); });
+    });
+    $('#nuevaDesdeCot').onclick = () => crearDesdeCot('pieza', tipo);
+    return;
+  }
+  if (Q.paso === 6) {
+    const lista = S.empaques.filter(e => e.estado !== 'inactivo');
+    box.innerHTML = `
+      <div class="row-title"><h2>¿En qué se entrega?</h2></div>
+      <p class="muted small" style="margin:4px 0 14px">Elige la caja, base o bolsa. Su precio se suma en Empaque del resumen.</p>
+      ${lista.length ? `<div class="piezas-sel">${lista.map(e => { const q = Q.empaques[e.id] || 0; return `
+        <div class="pz-sel ${q ? 'on' : ''}" data-emp="${esc(e.id)}">
+          ${fotoHtml(S.fotos[e.foto_path], e.nombre, 'pz-foto')}
+          <div class="pz-info"><b>${esc(e.nombre)}</b><span class="muted small">${money(e.precio)}${e.descripcion ? ' · ' + esc(e.descripcion) : ''}</span></div>
+          ${q ? `<div class="qty"><button type="button" data-menos aria-label="Menos">−</button><output>${q}</output><button type="button" data-mas aria-label="Más">+</button></div>`
+              : '<button type="button" class="btn btn-secondary btn-sm" data-add>Agregar</button>'}
+        </div>`; }).join('')}</div>`
+      : '<div class="empty">Todavía no tienes empaques registrados.</div>'}
+      <button type="button" class="btn btn-ghost btn-sm" id="nuevoEmpCot" style="margin-top:12px">+ Agregar un empaque nuevo</button>`;
+    const set = (id, q) => { if (q > 0) Q.empaques[id] = q; else delete Q.empaques[id]; Q.empaque = sumaEmpaques(Q) ? String(sumaEmpaques(Q)) : ''; renderPaso(); renderResumenCot(); };
+    document.querySelectorAll('[data-emp]').forEach(row => {
+      const id = row.dataset.emp;
+      const a = row.querySelector('[data-add]'); if (a) a.onclick = () => set(id, 1);
+      const m = row.querySelector('[data-mas]'); if (m) m.onclick = () => set(id, (Q.empaques[id] || 0) + 1);
+      const n = row.querySelector('[data-menos]'); if (n) n.onclick = () => set(id, (Q.empaques[id] || 0) - 1);
+    });
+    $('#nuevoEmpCot').onclick = async () => { const e = await editarEmpaque(null); if (e) set(e.id, 1); };
+    return;
+  }
+  // Resumen
+  const c = calcCotizacion(Q);
+  box.innerHTML = `
+    <h2 style="margin-bottom:14px">Mano de obra y precio</h2>
+    <div class="modal-grid res-grid">
+      <div class="field"><label for="qHoras">Horas de trabajo</label><div class="inp"><input id="qHoras" inputmode="decimal" value="${esc(Q.horas)}"><span class="affix">h × ${money(CFG.tarifa_mano_obra_hora)}</span></div></div>
+      <div class="field"><label for="qEmpaque">Empaque${Object.keys(Q.empaques || {}).length ? ' (del paso anterior)' : ' (caja, base)'}</label><div class="inp"><span class="affix">$</span><input id="qEmpaque" inputmode="decimal" value="${esc(Q.empaque)}" placeholder="0.00"></div></div>
+      <div class="field"><label for="qOtros">Otros gastos</label><div class="inp"><span class="affix">$</span><input id="qOtros" inputmode="decimal" value="${esc(Q.otros)}" placeholder="0.00"></div></div>
+      <div class="field"><label for="qMerma">Merma</label><div class="inp"><span class="affix">$</span><input id="qMerma" inputmode="decimal" value="${esc(Q.merma)}" placeholder="0.00"></div></div>
+      <div class="field"><label for="qMargen">Ganancia</label><div class="inp"><input id="qMargen" inputmode="decimal" value="${esc(Q.margen)}"><span class="affix">% del precio</span></div></div>
+    </div>
+    <div class="field" style="margin-top:16px"><label for="qFinal">Precio final al cliente</label>
+      <div class="inp" style="max-width:260px"><span class="affix">$</span><input id="qFinal" inputmode="decimal" value="${esc(Q.precioFinal)}" placeholder="${c.sugerido.toFixed(2)}"></div>
+      <span class="sug" id="qSugTxt">Déjalo vacío para usar el sugerido (${money(c.sugerido)}). Escribe otro si quieres redondear o dar un precio especial.</span></div>
+    <div class="field" style="margin-top:16px"><label for="qNotas">Notas para el cliente <span class="muted" style="font-weight:400">(opcional)</span></label><div class="inp"><textarea id="qNotas" placeholder="Colores, fecha de entrega, anticipo…">${esc(Q.notas)}</textarea></div></div>
+    <h2 style="margin:24px 0 8px;font-size:17px">Mensaje para el cliente</h2>
+    <p class="muted small" style="margin:0 0 8px">Solo lleva lo que eligió y el precio, sin tus costos. Se puede copiar después de guardar.</p>
+    <pre class="msg" id="qMsg"></pre>`;
+  const cli = () => S.clientes.find(x => x.id === Q.cliente_id);
+  const pintaMsg = () => { $('#qMsg').textContent = mensajeCliente(Q, calcCotizacion(Q), cli(), Q.folio); };
+  const bind = (id, k) => $('#' + id).oninput = ev => { Q[k] = ev.target.value; renderResumenCot(); pintaMsg(); if (k !== 'precioFinal') { const sg = calcCotizacion(Q).sugerido; $('#qFinal').placeholder = sg.toFixed(2); $('#qSugTxt').textContent = `Déjalo vacío para usar el sugerido (${money(sg)}). Escribe otro si quieres redondear o dar un precio especial.`; } };
+  bind('qHoras', 'horas'); bind('qEmpaque', 'empaque'); bind('qOtros', 'otros'); bind('qMerma', 'merma'); bind('qMargen', 'margen'); bind('qFinal', 'precioFinal'); bind('qNotas', 'notas');
+  pintaMsg();
+}
+function renderResumenCot() {
+  const Q = S.cot, c = calcCotizacion(Q), box = $('#resumenCot'); if (!box) return;
+  guardarBorrador();
+  const nombre = t => { const l = c.lineas.find(x => x.tipo === t); return l ? `${esc(l.r.nombre)}<small>${fmtN(l.tandas, 2)} tanda${l.tandas === 1 ? '' : 's'}${l.exacto ? '' : ' · aprox.'}</small>` : null; };
+  const linea = (chip, txt, val) => `<li class="ln"><span class="ln-what">${chip ? `<span class="chip c-${chip}">${tipoLabel(chip)}</span>` : ''}<span>${txt}</span></span><b class="num">${money(val)}</b></li>`;
+  box.innerHTML = `
+    <section class="sum">
+      <div class="sum-head"><h3>${esc(Q.producto || 'Resumen')}</h3><span class="muted small">${esc(descEstructura(Q.pisos))} · ${c.pmin}–${c.pmax} porc.</span></div>
+      <ul class="lns">
+        ${c.lineas.map(l => linea(l.tipo, nombre(l.tipo), l.costo)).join('')}
+        ${c.lineas.length ? linea(null, `Indirectos<small>gas, luz, moldes · ${fmtN(Q.pctIndirectos)}%</small>`, c.indirectos) : ''}
+        ${c.manoObra ? linea(null, `Mano de obra<small>${fmtN(num(Q.horas) || 0)} h × ${money(CFG.tarifa_mano_obra_hora)}</small>`, c.manoObra) : ''}
+        ${c.empaque ? linea(null, 'Empaque', c.empaque) : ''}
+        ${c.otros ? linea(null, 'Otros gastos', c.otros) : ''}
+        ${c.merma ? linea(null, 'Merma', c.merma) : ''}
+        ${!c.lineas.length && !c.manoObra ? '<li class="ln muted small">Elige el bizcocho para ver el costo.</li>' : ''}
+      </ul>
+      <div class="sum-sub"><span>Costo del pastel</span><b class="num">${money(c.base)}</b></div>
+      <div class="sum-margin"><span>Ganancia ${fmtN(c.margen)}%</span><span class="num">+ ${money(c.precioPastel - c.base)}</span></div>
+      ${c.piezas.length ? `<ul class="lns">${c.piezas.map(p => linea(p.r.tipo, `${p.qty > 1 ? p.qty + ' × ' : ''}${esc(p.r.nombre)}<small>${p.modalidad === 'renta' ? 'renta' : 'venta'} · ${money(p.precioU)} c/u</small>`, p.precio)).join('')}</ul>` : ''}
+      <div class="sum-total"><span><small>${num(Q.precioFinal) != null ? 'Precio final' : 'Precio sugerido'}</small><span class="price">${money(c.final)}</span></span></div>
+      ${c.deposito ? `<div class="sum-dep"><span>Depósito reembolsable</span><b class="num">${money(c.deposito)}</b></div>` : ''}
+      <div class="sum-foot"><span>Tu ganancia estimada</span><b class="num">${money(c.utilidad)}</b></div>
+    </section>`;
+  const bar = $('#barraPrecio');
+  if (bar) { bar.innerHTML = `<span>${num(Q.precioFinal) != null ? 'Precio final' : 'Precio sugerido'}${c.deposito ? ` · + ${money(c.deposito)} depósito` : ''}</span><b>${money(c.final)}</b>`; bar.onclick = () => box.scrollIntoView({ behavior: 'smooth' }); }
+}
+async function guardarCotizacion() {
+  const Q = S.cot, c = calcCotizacion(Q);
+  if (!Q.bizcocho) { toast('err', 'Falta el bizcocho.', 'Elige el sabor antes de guardar.'); irPaso(1); return; }
+  const btn = $('#btnGuardarCot'); btn.disabled = true; btn.textContent = 'Guardando…';
+  const ahora = new Date(), p2 = n => String(n).padStart(2, '0');
+  const folio = Q.folio || `COT-${ahora.getFullYear()}${p2(ahora.getMonth() + 1)}${p2(ahora.getDate())}-${p2(ahora.getHours())}${p2(ahora.getMinutes())}${p2(ahora.getSeconds())}`;
+  const r2 = v => Math.round(v * 100) / 100;
+  const nombreDe = t => c.lineas.find(l => l.tipo === t)?.r.nombre;
+  const descripcion = [descEstructura(Q.pisos), nombreDe('bizcocho') && `bizcocho ${nombreDe('bizcocho')}`, nombreDe('relleno') && `relleno ${nombreDe('relleno')}`,
+    nombreDe('betun') && `betún ${nombreDe('betun')}`, ...c.piezas.map(p => `${p.qty} × ${p.r.nombre}${p.modalidad === 'renta' ? ' (renta)' : ''}`)].filter(Boolean).join(', ');
+  const cot = { id: Q.id, folio, cliente_id: Q.cliente_id || null, producto: Q.producto.trim() || 'Pastel', porciones: num(Q.porcionesPedidas) || c.pmax, descripcion,
+    precio_ingredientes: r2(c.ingredientes), costo_mano_obra: r2(c.manoObra), costo_gas_electricidad: r2(c.indirectos), costo_empaque: r2(c.empaque),
+    costo_otros: r2(c.otros), costo_merma: r2(c.merma), costo_piezas: r2(c.costoPiezas), costo_total: r2(c.costoTotal), margen_objetivo: c.margen, precio_sugerido: c.sugerido, precio_cotizado: r2(c.final),
+    utilidad_estimada: r2(c.utilidad), deposito_total: r2(c.deposito), estructura: Q.pisos.map(p => ({ diametro: p.d, panes: p.panes })),
+    horas_mano_obra: num(Q.horas) || 0, pct_indirectos: Q.pctIndirectos, notas: Q.notas.trim() || null, estado: Q.estado || 'borrador',
+    ...(Q.id ? {} : { fecha_cotizacion: `${ahora.getFullYear()}-${p2(ahora.getMonth() + 1)}-${p2(ahora.getDate())}` }) };
+  const lineas = [
+    ...c.lineas.map(l => ({ tipo: l.tipo, receta_id: l.r.receta_id, concepto: l.r.nombre, cantidad: +l.tandas.toFixed(4), unidad: 'tanda', costo_unitario: Number(l.r.costo_tanda), costo_total: r2(l.costo), porciones: c.pmax })),
+    ...c.piezas.map(p => ({ tipo: p.r.tipo, receta_id: p.r.receta_id, concepto: p.r.nombre, cantidad: p.qty, unidad: 'pz', costo_unitario: Number(p.r.costo_tanda), costo_total: r2(p.costo), modalidad: p.modalidad, deposito: r2(p.deposito) })),
+    c.indirectos ? { tipo: 'servicios', concepto: `Indirectos ${Q.pctIndirectos}% (gas, luz, moldes)`, cantidad: 1, costo_unitario: r2(c.indirectos), costo_total: r2(c.indirectos) } : null,
+    c.manoObra ? { tipo: 'mano_obra', concepto: 'Mano de obra', cantidad: num(Q.horas) || 0, unidad: 'h', costo_unitario: Number(CFG.tarifa_mano_obra_hora), costo_total: r2(c.manoObra) } : null,
+    ...Object.entries(Q.empaques || {}).map(([id, q]) => { const e = S.empaques.find(x => x.id === id); return e ? { tipo: 'empaque', empaque_id: id, concepto: e.nombre, cantidad: q, unidad: 'pz', costo_unitario: Number(e.precio), costo_total: r2(Number(e.precio) * q) } : null; }),
+    c.otros ? { tipo: 'otro', concepto: 'Otros gastos', cantidad: 1, costo_unitario: r2(c.otros), costo_total: r2(c.otros) } : null,
+    c.merma ? { tipo: 'merma', concepto: 'Merma', cantidad: 1, costo_unitario: r2(c.merma), costo_total: r2(c.merma) } : null,
+    Math.abs(c.empaque - sumaEmpaques(Q)) > 0.004 ? { tipo: 'empaque', concepto: sumaEmpaques(Q) ? 'Ajuste de empaque' : 'Empaque', cantidad: 1, costo_unitario: r2(c.empaque - sumaEmpaques(Q)), costo_total: r2(c.empaque - sumaEmpaques(Q)) } : null
+  ].filter(Boolean);
+  try {
+    const g = await api.guardarCotizacion(cot, lineas);
+    toast('ok', 'Cotización guardada.', `${folio} · ${money(c.final)}`);
+    borrarBorrador(); verCotizacion(g.id);
+  } catch (x) { toast('err', 'No se pudo guardar.', x.message); btn.disabled = false; btn.textContent = 'Guardar cotización'; }
+}
+
+/* ===== Ver una cotización ===== */
+async function verCotizacion(id) {
+  $('#app').innerHTML = '<p class="muted">Cargando…</p>';
+  await loadRecetas();
+  const c = await api.cotizacion(id), cli = S.clientes.find(x => x.id === c.cliente_id);
+  S.pedidos = await api.pedidos().catch(() => S.pedidos); const pedido = S.pedidos.find(p => p.cotizacion_id === c.id);
+  const tieneEstructura = (c.estructura || []).length > 0;
+  let msg = c.descripcion || '';
+  if (tieneEstructura) {
+    const Q = { ...cotVacia(), producto: c.producto, pisos: c.estructura.map(p => ({ d: Number(p.diametro), panes: Number(p.panes) })), notas: c.notas || '', precioFinal: String(c.precio_cotizado), piezas: {} };
+    (c.detalle || []).forEach(l => { if (['bizcocho', 'relleno', 'betun'].includes(l.tipo)) Q[l.tipo] = l.receta_id; if (l.tipo === 'topper' || l.tipo === 'decoracion') Q.piezas[l.receta_id] = { qty: Number(l.cantidad), modalidad: l.modalidad || 'venta' }; if (l.tipo === 'empaque' && l.empaque_id) Q.empaques[l.empaque_id] = Number(l.cantidad) || 1; });
+    const calc = calcCotizacion(Q); calc.final = Number(c.precio_cotizado); calc.deposito = Number(c.deposito_total) || calc.deposito;
+    msg = mensajeCliente(Q, calc, cli, c.folio);
+  } else {
+    msg = [cli ? `Hola ${cli.nombre.split(' ')[0]}, te comparto la cotización de tu pastel.` : 'Te comparto la cotización de tu pastel.', '', `Cotización: ${c.folio}`, `Pastel: ${c.producto}`, c.porciones ? `Porciones: ${c.porciones}` : null, c.descripcion ? `Detalle: ${c.descripcion}` : null, '', `Precio: ${money(c.precio_cotizado)}`].filter(x => x !== null).join('\n');
+  }
+  const det = c.detalle || [];
+  $('#app').innerHTML = `
+  <div class="head"><div><a href="#" class="small muted" id="volverCot">← Cotizaciones</a><h1>${esc(c.producto || 'Pastel')}</h1><span class="muted small">${esc(c.folio)} · ${esc(fechaCorta(c.fecha_cotizacion))} · ${esc(cli?.nombre || 'Sin cliente')}</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-danger btn-sm" id="cBorrar">Eliminar</button>${tieneEstructura ? '<button class="btn btn-secondary" id="cEditar">Editar</button>' : ''}${pedido ? '<button class="btn btn-secondary" id="cVerPed">Ver pedido</button>' : '<button class="btn btn-primary" id="cPedido">Convertir en pedido</button>'}</div></div>
+  <div class="ed">
+    <div class="panel">
+      <h2 style="margin-bottom:8px">Mensaje para el cliente</h2>
+      <pre class="msg">${esc(msg)}</pre>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn btn-primary" id="cCopiar">Copiar mensaje</button>
+        <a class="btn btn-secondary" id="cWa" href="${esc(waLink(msg, cli?.telefono))}" target="_blank" rel="noopener">Abrir en WhatsApp</a>
+      </div>
+      ${cli?.telefono ? `<p class="sug" style="margin-top:6px">Se abre con ${esc(cli.nombre)} (${esc(cli.telefono)}).</p>` : '<p class="sug" style="margin-top:6px">El cliente no tiene teléfono: WhatsApp te dejará elegir el chat.</p>'}
+      <div class="field" style="margin-top:24px"><label for="cEstado">Estado</label>
+        <div class="inp" style="max-width:240px"><select id="cEstado">${Object.entries(ESTADOS_COT).map(([k, v]) => `<option value="${k}" ${k === c.estado ? 'selected' : ''}>${v}</option>`).join('')}</select></div></div>
+      ${det.length ? `<h2 style="margin:24px 0 8px;font-size:17px">Desglose interno</h2>
+      <table class="det"><thead><tr><th>Concepto</th><th>Cantidad</th><th style="text-align:right">Costo</th></tr></thead><tbody>
+        ${det.map(l => `<tr><td>${esc(l.concepto)}${l.modalidad === 'renta' ? ' <span class="pill pill-warn">renta</span>' : ''}</td><td class="num">${fmtN(l.cantidad, 2)} ${esc(l.unidad || '')}</td><td class="num" style="text-align:right">${money(l.costo_total)}</td></tr>`).join('')}
+      </tbody></table>` : ''}
+    </div>
+    <aside class="side"><section class="sum">
+      <div class="sum-head"><h3>Números</h3><span class="muted small">${c.porciones ? c.porciones + ' porciones' : ''}</span></div>
+      <ul class="lns">
+        <li class="ln"><span class="ln-what">Ingredientes</span><b class="num">${money(c.precio_ingredientes)}</b></li>
+        <li class="ln"><span class="ln-what">Indirectos</span><b class="num">${money(c.costo_gas_electricidad)}</b></li>
+        <li class="ln"><span class="ln-what">Mano de obra</span><b class="num">${money(c.costo_mano_obra)}</b></li>
+        ${Number(c.costo_empaque) ? `<li class="ln"><span class="ln-what">Empaque</span><b class="num">${money(c.costo_empaque)}</b></li>` : ''}
+        ${Number(c.costo_otros) ? `<li class="ln"><span class="ln-what">Otros gastos</span><b class="num">${money(c.costo_otros)}</b></li>` : ''}
+        ${Number(c.costo_merma) ? `<li class="ln"><span class="ln-what">Merma</span><b class="num">${money(c.costo_merma)}</b></li>` : ''}
+        ${Number(c.costo_piezas) ? `<li class="ln"><span class="ln-what">Piezas vendidas</span><b class="num">${money(c.costo_piezas)}</b></li>` : ''}
+      </ul>
+      <div class="sum-sub"><span>Costo total</span><b class="num">${money(c.costo_total)}</b></div>
+      <div class="sum-total"><span><small>Precio al cliente</small><span class="price">${money(c.precio_cotizado)}</span></span></div>
+      ${Number(c.deposito_total) ? `<div class="sum-dep"><span>Depósito reembolsable</span><b class="num">${money(c.deposito_total)}</b></div>` : ''}
+      <div class="sum-foot"><span>Ganancia estimada</span><b class="num">${money(c.utilidad_estimada)}</b></div>
+    </section></aside>
+  </div>`;
+  $('#volverCot').onclick = ev => { ev.preventDefault(); go('cotizaciones'); };
+  $('#cCopiar').onclick = async () => { try { await navigator.clipboard.writeText(msg); toast('ok', 'Mensaje copiado.', 'Pégalo en WhatsApp.'); } catch { toast('err', 'No se pudo copiar.', 'Selecciona el texto y cópialo a mano.'); } };
+  $('#cEstado').onchange = async ev => { try { await api.estadoCotizacion(c.id, ev.target.value); toast('ok', 'Estado actualizado.', ESTADOS_COT[ev.target.value]); } catch (x) { toast('err', 'No se pudo actualizar.', x.message); } };
+  const ed = $('#cEditar'); if (ed) ed.onclick = () => abrirCotizador(c.id);
+  const cp = $('#cPedido'); if (cp) cp.onclick = async () => { if (await crearPedido(c)) go('pedidos'); };
+  const vp = $('#cVerPed'); if (vp) vp.onclick = () => go('pedidos');
+  $('#cBorrar').onclick = async () => {
+    if (!confirm(`¿Eliminar la cotización ${c.folio}? No se puede deshacer.`)) return;
+    try { await api.borrarCotizacion(c.id); toast('ok', 'Cotización eliminada.', ''); go('cotizaciones'); } catch (x) { toast('err', 'No se pudo eliminar.', x.message); }
+  };
+}
+
+/* ===== Clientes, moldes y números ===== */
+async function pedirNumero(titulo, etiqueta, sufijo) {
+  const p = abrirModal(titulo, `<div class="field"><label for="pnVal">${esc(etiqueta)}</label><div class="inp"><input id="pnVal" inputmode="decimal"><span class="affix">${esc(sufijo)}</span></div></div>`, 'Aceptar');
+  const form = abrirModal.ultimo;
+  form.onsubmit = ev => { ev.preventDefault(); const v = num(form.querySelector('#pnVal').value); if (!(v > 0)) return form.error('Escribe un número mayor que cero.'); form.cerrar(v); };
+  return p;
+}
+async function editarMoldes() {
+  const filas = () => [...S.moldes].sort((a, b) => a.diametro_cm - b.diametro_cm).map(m => `
+    <div class="molde-row" data-mid="${esc(m.id)}"><span><b>${fmtN(m.diametro_cm)} cm</b></span>
+      <div class="inp"><input data-min inputmode="numeric" value="${m.porciones_min}"></div><span class="muted">a</span>
+      <div class="inp"><input data-max inputmode="numeric" value="${m.porciones_max}"></div><span class="muted small">porc.</span>
+      <button type="button" class="x" data-del aria-label="Quitar molde">×</button></div>`).join('');
+  const p = abrirModal('Tabla de moldes', `
+    <p class="muted small" style="margin:-6px 0 0">Porciones que salen de cada molde a altura normal (2 panes). Con 4 panes salen el doble.</p>
+    <div id="moldesRows">${filas()}</div>
+    <div class="molde-row"><div class="inp"><input id="mNuevoD" inputmode="decimal" placeholder="Molde"><span class="affix">cm</span></div>
+      <div class="inp"><input id="mNuevoMin" inputmode="numeric" placeholder="min"></div><span class="muted">a</span>
+      <div class="inp"><input id="mNuevoMax" inputmode="numeric" placeholder="máx"></div><span class="muted small">porc.</span><span></span></div>`, 'Guardar tabla');
+  const form = abrirModal.ultimo;
+  form.querySelector('#moldesRows').onclick = async ev => {
+    const b = ev.target.closest('[data-del]'); if (!b) return;
+    const row = b.closest('[data-mid]');
+    try { await api.borrarMolde(row.dataset.mid); S.moldes = S.moldes.filter(m => m.id !== row.dataset.mid); row.remove(); } catch (x) { form.error(x.message); }
+  };
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const cambios = [...form.querySelectorAll('[data-mid]')].map(row => { const m = S.moldes.find(x => x.id === row.dataset.mid); return { m, min: num(row.querySelector('[data-min]').value), max: num(row.querySelector('[data-max]').value) }; });
+    if (cambios.some(c => !(c.min > 0) || !(c.max >= c.min))) return form.error('Revisa las porciones: el mínimo debe ser mayor que cero y el máximo igual o mayor.');
+    const d = num(form.querySelector('#mNuevoD').value), mn = num(form.querySelector('#mNuevoMin').value), mx = num(form.querySelector('#mNuevoMax').value);
+    if (d != null && (!(d > 0) || !(mn > 0) || !(mx >= mn))) return form.error('Para agregar un molde escribe su medida y sus porciones.');
+    if (d != null && S.moldes.some(m => Number(m.diametro_cm) === d)) return form.error(`El molde de ${d} cm ya está en la tabla.`);
+    try {
+      for (const c of cambios) if (c.min !== Number(c.m.porciones_min) || c.max !== Number(c.m.porciones_max)) Object.assign(c.m, await api.guardarMolde({ id: c.m.id, diametro_cm: c.m.diametro_cm, porciones_min: c.min, porciones_max: c.max }));
+      if (d != null) S.moldes.push(await api.guardarMolde({ diametro_cm: d, porciones_min: mn, porciones_max: mx }));
+      toast('ok', 'Tabla de moldes guardada.', ''); form.cerrar(true);
+    } catch (x) { form.error(x.message); }
+  };
+  await p;
+  if (S.cot && $('#pasoBox')) { renderPaso(); renderResumenCot(); }
+}
+
+/* ===== Clientes ===== */
+function renderClientes() {
+  const q = norm(S.buscaCli || '');
+  const lista = S.clientes.filter(c => !q || [c.nombre, c.telefono, c.correo, c.ciudad].some(v => norm(v).includes(q)));
+  $('#app').innerHTML = `
+  <div class="head"><div><span class="muted small">${S.clientes.length} cliente${S.clientes.length === 1 ? '' : 's'}</span><h1>Clientes</h1></div>
+    <button class="btn btn-primary" id="btnNuevoCli">+ Nuevo cliente</button></div>
+  <div class="inp" style="max-width:420px;margin-bottom:16px"><input id="buscaCli" value="${esc(S.buscaCli || '')}" placeholder="Buscar por nombre, teléfono, correo o ciudad"></div>
+  ${lista.length ? `<div class="cot-list">${lista.map(c => `
+    <button class="cot-item" data-cli="${esc(c.id)}">
+      <span class="cot-main"><b>${esc(c.nombre)}</b><span class="muted small">${[c.telefono, c.correo, c.ciudad].filter(Boolean).map(esc).join(' · ') || 'Sin datos de contacto'}</span></span>
+      <span class="muted small">Editar</span>
+    </button>`).join('')}</div>` : `<div class="empty">${q ? 'No hay clientes con esa búsqueda.' : 'Todavía no hay clientes.'}</div>`}`;
+  $('#buscaCli').oninput = ev => { S.buscaCli = ev.target.value; const pos = ev.target.selectionStart; renderClientes(); const el = $('#buscaCli'); el.focus(); el.setSelectionRange(pos, pos); };
+  $('#btnNuevoCli').onclick = async () => { if (await editarCliente(null)) renderClientes(); };
+  document.querySelectorAll('[data-cli]').forEach(b => b.onclick = async () => { if (await editarCliente(S.clientes.find(c => c.id === b.dataset.cli))) renderClientes(); });
+}
+async function editarCliente(cli) {
+  const f = (id, lbl, val, extra = '') => `<div class="field"><label for="${id}">${lbl}</label><div class="inp"><input id="${id}" value="${esc(val || '')}" ${extra}></div></div>`;
+  const p = abrirModal(cli ? 'Editar cliente' : 'Nuevo cliente', `
+    ${f('clNombre', 'Nombre', cli?.nombre, 'placeholder="Ej. Sofía Ramírez"')}
+    <div class="modal-grid">${f('clTel', 'WhatsApp / teléfono', cli?.telefono, 'inputmode="tel" placeholder="10 dígitos"')}${f('clCorreo', 'Correo', cli?.correo, 'type="email"')}</div>
+    ${f('clCiudad', 'Ciudad', cli?.ciudad)}
+    <div class="field"><label for="clNotas">Notas</label><div class="inp"><textarea id="clNotas" placeholder="Alergias, gustos, cómo prefiere que la contacten…">${esc(cli?.notas || '')}</textarea></div></div>
+    ${cli ? '<button type="button" class="btn btn-danger btn-sm" id="clBorrar" style="align-self:flex-start">Eliminar cliente</button>' : ''}`, cli ? 'Guardar cambios' : 'Guardar cliente');
+  const form = abrirModal.ultimo, v = id => form.querySelector('#' + id).value.trim() || null;
+  const b = form.querySelector('#clBorrar');
+  if (b) b.onclick = async () => {
+    if (!confirm(`¿Eliminar a ${cli.nombre}?`)) return;
+    try { await api.borrarCliente(cli.id); S.clientes = S.clientes.filter(x => x.id !== cli.id); toast('ok', 'Cliente eliminado.', ''); form.cerrar(true); }
+    catch (x) { form.error(/foreign key/i.test(x.message) ? 'Tiene cotizaciones o pedidos; no se puede eliminar.' : x.message); }
+  };
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const datos = { nombre: v('clNombre'), telefono: v('clTel'), correo: v('clCorreo'), ciudad: v('clCiudad'), notas: v('clNotas') };
+    if (!datos.nombre) return form.error('Escribe el nombre del cliente.');
+    try {
+      const c = cli ? await api.actualizarCliente(cli.id, datos) : await api.crearCliente(datos);
+      const i = S.clientes.findIndex(x => x.id === c.id); if (i >= 0) S.clientes[i] = c; else S.clientes.push(c);
+      S.clientes.sort((a, b) => a.nombre.localeCompare(b.nombre)); toast('ok', 'Cliente guardado.', c.nombre); form.cerrar(c);
+    } catch (x) { form.error(x.message); }
+  };
+  return p;
+}
+async function nuevoCliente() { return editarCliente(null); }
+
+/* ===== Pedidos ===== */
+const ESTADOS_PED = { pendiente: 'Pendiente', confirmado: 'Confirmado', en_produccion: 'En producción', terminado: 'Terminado', entregado: 'Entregado', cancelado: 'Cancelado' };
+const DEVOL = { no_aplica: 'Sin piezas en renta', pendiente: 'Piezas por regresar', devuelta: 'Piezas devueltas', no_devuelta: 'No las regresó' };
+const hoyISO = () => { const d = new Date(), p2 = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`; };
+const sumarDias = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const fechaLarga = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+async function crearPedido(c) {
+  const p = abrirModal('Convertir en pedido', `
+    <p class="muted small" style="margin:-6px 0 0">${esc(c.producto)} · ${money(c.precio_cotizado)}${Number(c.deposito_total) ? ` + depósito ${money(c.deposito_total)}` : ''}</p>
+    <div class="modal-grid">
+      <div class="field"><label for="pdFecha">Fecha de entrega</label><div class="inp"><input id="pdFecha" type="date" min="${hoyISO()}"></div></div>
+      <div class="field"><label for="pdHora">Hora</label><div class="inp"><input id="pdHora" type="time" value="17:00"></div></div>
+    </div>
+    <div class="modal-grid">
+      <div class="field"><label for="pdTipo">Entrega</label><div class="inp"><select id="pdTipo"><option>Recoge en tienda</option><option>Envío a domicilio</option></select></div></div>
+      <div class="field"><label for="pdAnt">Anticipo recibido</label><div class="inp"><span class="affix">$</span><input id="pdAnt" inputmode="decimal" placeholder="0.00"></div></div>
+    </div>
+    <div class="field"><label for="pdLugar">Lugar de entrega <span class="muted" style="font-weight:400">(si es envío)</span></label><div class="inp"><input id="pdLugar"></div></div>
+    <p class="sug" style="margin:0">Al guardar se crean solas las tareas en el calendario: horneado 4 días antes, relleno 2 días antes, decoración 1 día antes, empaque y entrega el mismo día.</p>`, 'Crear pedido');
+  const form = abrirModal.ultimo;
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const fecha = form.querySelector('#pdFecha').value, hora = form.querySelector('#pdHora').value || null;
+    if (!fecha) return form.error('Elige la fecha de entrega.');
+    const dep = Number(c.deposito_total) || 0;
+    const datos = { cotizacion_id: c.id, cliente_id: c.cliente_id || null, producto: c.producto || 'Pastel', porciones: c.porciones, fecha_entrega: fecha, hora_entrega: hora,
+      precio_venta: Number(c.precio_cotizado) || 0, anticipo: num(form.querySelector('#pdAnt').value) || 0, tipo_entrega: form.querySelector('#pdTipo').value,
+      lugar_entrega: form.querySelector('#pdLugar').value.trim() || null, descripcion: c.descripcion, notas: c.notas, estado: 'confirmado',
+      deposito: dep, devolucion_estado: dep ? 'pendiente' : 'no_aplica', fecha_limite_devolucion: dep ? sumarDias(fecha, Number(CFG.dias_devolucion) || 3) : null };
+    try {
+      const ped = await api.crearPedido(datos);
+      if (c.estado !== 'aceptada') await api.estadoCotizacion(c.id, 'aceptada');
+      toast('ok', 'Pedido creado.', `Entrega ${fechaLarga(fecha)}. Ya está en el calendario.`); form.cerrar(ped);
+    } catch (x) { form.error(x.message); }
+  };
+  return p;
+}
+function renderPedidos() {
+  const ver = S.verPed || 'proximos', hoy = hoyISO();
+  const lista = S.pedidos.filter(p => ver === 'todos' || (p.estado !== 'entregado' && p.estado !== 'cancelado') || p.devolucion_estado === 'pendiente')
+    .sort((a, b) => (a.fecha_entrega || '').localeCompare(b.fecha_entrega || ''));
+  $('#app').innerHTML = `
+  <div class="head"><div><span class="muted small">${lista.length} pedido${lista.length === 1 ? '' : 's'}</span><h1>Pedidos</h1></div>
+    <div class="seg seg-sm" role="radiogroup"><button type="button" role="radio" data-ver="proximos" aria-checked="${ver === 'proximos'}">Por entregar</button><button type="button" role="radio" data-ver="todos" aria-checked="${ver === 'todos'}">Todos</button></div></div>
+  ${lista.length ? `<div class="cot-list">${lista.map(p => { const saldo = Number(p.precio_venta) - Number(p.anticipo || 0); const tarde = p.fecha_entrega < hoy && !['entregado', 'cancelado'].includes(p.estado); return `
+    <div class="ped" data-pid="${esc(p.id)}">
+      <div class="ped-fecha ${tarde ? 'tarde' : ''}"><b>${esc(new Date(p.fecha_entrega + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }))}</b><span>${esc((p.hora_entrega || '').slice(0, 5))}</span></div>
+      <div class="ped-main"><b>${esc(p.producto)}</b><span class="muted small">${esc(p.clientes?.nombre || 'Sin cliente')} · ${esc(p.tipo_entrega || '')}${p.lugar_entrega ? ' · ' + esc(p.lugar_entrega) : ''}</span>
+        <span class="small">Precio ${money(p.precio_venta)} · Anticipo ${money(p.anticipo)} · <b>Saldo ${money(saldo)}</b>${Number(p.deposito) ? ` · Depósito ${money(p.deposito)}` : ''}</span></div>
+      <div class="ped-acc">
+        <div class="inp"><select data-estado>${Object.entries(ESTADOS_PED).map(([k, v]) => `<option value="${k}" ${k === p.estado ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+        ${Number(p.deposito) ? `<div class="inp"><select data-devol>${Object.entries(DEVOL).filter(([k]) => k !== 'no_aplica').map(([k, v]) => `<option value="${k}" ${k === p.devolucion_estado ? 'selected' : ''}>${v}${k === 'pendiente' && p.fecha_limite_devolucion ? ' (antes del ' + fechaCorta(p.fecha_limite_devolucion) + ')' : ''}</option>`).join('')}</select></div>` : ''}
+        ${p.cotizacion_id ? '<button class="btn btn-ghost btn-sm" data-vercot>Ver cotización</button>' : ''}
+      </div>
+    </div>`; }).join('')}</div>`
+  : '<div class="empty">No hay pedidos por entregar. Se crean desde una cotización con "Convertir en pedido".</div>'}`;
+  document.querySelectorAll('[data-ver]').forEach(b => b.onclick = () => { S.verPed = b.dataset.ver; renderPedidos(); });
+  document.querySelectorAll('[data-pid]').forEach(row => {
+    const p = S.pedidos.find(x => x.id === row.dataset.pid);
+    row.querySelector('[data-estado]').onchange = async ev => { try { await api.actualizarPedido(p.id, { estado: ev.target.value }); p.estado = ev.target.value; toast('ok', 'Pedido actualizado.', ESTADOS_PED[p.estado]); } catch (x) { toast('err', 'No se pudo actualizar.', x.message); } };
+    const d = row.querySelector('[data-devol]'); if (d) d.onchange = async ev => { const v = ev.target.value; try { await api.actualizarPedido(p.id, { devolucion_estado: v, fecha_devolucion: v === 'devuelta' ? hoyISO() : null }); p.devolucion_estado = v; toast('ok', 'Actualizado.', DEVOL[v]); } catch (x) { toast('err', 'No se pudo actualizar.', x.message); } };
+    const vc = row.querySelector('[data-vercot]'); if (vc) vc.onclick = () => verCotizacion(p.cotizacion_id);
+  });
+}
+
+/* ===== Calendario de producción ===== */
+const ETAPAS = { compra: 'Comprar', horneado: 'Hornear', preparacion: 'Rellenos y betún', decoracion: 'Decorar', empaque: 'Empacar', entrega: 'Entregar' };
+function lunesDe(iso) { const d = new Date(iso + 'T12:00:00'); const k = (d.getDay() + 6) % 7; d.setDate(d.getDate() - k); return d.toISOString().slice(0, 10); }
+async function renderCalendario() {
+  const ini = S.semana || lunesDe(hoyISO()), fin = sumarDias(ini, 6);
+  $('#app').innerHTML = '<p class="muted">Cargando…</p>';
+  const tareas = (await api.tareas(ini, fin)).filter(t => t.pedidos && t.pedidos.estado !== 'cancelado');
+  const cotIds = [...new Set(tareas.map(t => t.pedidos.cotizacion_id).filter(Boolean))];
+  const det = cotIds.length ? await api.detalleDe(cotIds) : [];
+  const detDe = (cid, tipos) => det.filter(d => d.cotizacion_id === cid && tipos.includes(d.tipo));
+  const QUE = { horneado: ['bizcocho'], preparacion: ['relleno', 'betun'], decoracion: ['topper', 'decoracion'], empaque: ['empaque'] };
+  // Ingredientes que se necesitan para hornear y preparar esta semana (tareas pendientes)
+  const porHacer = tareas.filter(t => t.estado !== 'completado' && (t.etapa === 'horneado' || t.etapa === 'preparacion'));
+  const usos = porHacer.flatMap(t => detDe(t.pedidos.cotizacion_id, QUE[t.etapa]).filter(d => d.receta_id).map(d => ({ receta_id: d.receta_id, tandas: Number(d.cantidad) })));
+  const lineas = usos.length ? await api.lineasDe([...new Set(usos.map(u => u.receta_id))]) : [];
+  const nec = {};
+  usos.forEach(u => lineas.filter(l => l.receta_id === u.receta_id).forEach(l => {
+    const ing = S.ingredientes.find(i => i.id === l.ingrediente_id); if (!ing) return;
+    const c = convertir(Number(l.cantidad) * u.tandas, l.unidad, ing.unidad); if (c == null) return;
+    nec[ing.id] = (nec[ing.id] || 0) + c;
+  }));
+  const compras = Object.entries(nec).map(([id, cant]) => { const i = S.ingredientes.find(x => x.id === id); const tiene = Number(i.existencia) || 0; const falta = Math.max(0, cant - tiene);
+    return { i, cant, tiene, falta, costo: i.cantidad_presentacion ? falta / Number(i.cantidad_presentacion) * Number(i.precio_actual) : 0 }; }).sort((a, b) => a.i.nombre.localeCompare(b.i.nombre));
+  const fmtCant = (v, u) => (u === 'g' || u === 'ml') && v >= 1000 ? `${fmtN(v / 1000, 2)} ${u === 'g' ? 'kg' : 'l'}` : `${fmtN(v, 1)} ${u}`;
+  const hoy = hoyISO();
+  const dias = Array.from({ length: 7 }, (_, k) => sumarDias(ini, k));
+  const txtLista = compras.filter(x => x.falta > 0).map(x => `- ${x.i.nombre}: ${fmtCant(x.falta, x.i.unidad)}`).join('\n');
+  $('#app').innerHTML = `
+  <div class="head"><div><span class="muted small">Semana del ${esc(fechaCorta(ini))} al ${esc(fechaCorta(fin))}</span><h1>Calendario</h1></div>
+    <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" data-sem="-7">← Anterior</button><button class="btn btn-ghost btn-sm" data-sem="0">Hoy</button><button class="btn btn-secondary btn-sm" data-sem="7">Siguiente →</button></div></div>
+  <div class="cal">${dias.map(d => { const ts = tareas.filter(t => t.fecha_programada === d).sort((a, b) => (a.hora_programada || '').localeCompare(b.hora_programada || '')); return `
+    <section class="cal-dia ${d === hoy ? 'hoy' : ''}"><h3>${esc(fechaLarga(d))}</h3>
+      ${ts.length ? ts.map(t => { const items = detDe(t.pedidos.cotizacion_id, QUE[t.etapa] || []); return `
+        <label class="tarea ${t.estado === 'completado' ? 'hecha' : ''} et-${t.etapa}">
+          <input type="checkbox" data-tid="${esc(t.id)}" ${t.estado === 'completado' ? 'checked' : ''}>
+          <span><b>${ETAPAS[t.etapa] || esc(t.etapa)}</b> · ${esc(t.pedidos.producto)}${t.pedidos.clientes?.nombre ? ' · ' + esc(t.pedidos.clientes.nombre) : ''}
+            ${t.etapa === 'entrega' ? `<small>${esc((t.hora_programada || '').slice(0, 5))} h</small>` : ''}
+            ${items.length ? `<small>${items.map(it => `${esc(it.concepto)}${it.unidad === 'tanda' ? ' × ' + fmtN(it.cantidad, 2) + (Number(it.cantidad) === 1 ? ' tanda' : ' tandas') : it.cantidad > 1 ? ' × ' + fmtN(it.cantidad) : ''}`).join(' · ')}</small>` : ''}</span>
+        </label>`; }).join('') : '<p class="muted small" style="margin:0">Sin tareas</p>'}
+    </section>`; }).join('')}</div>
+  <section class="panel" style="margin-top:20px">
+    <div class="head" style="margin-bottom:8px"><div><h2>Ingredientes para hornear y preparar esta semana</h2><span class="muted small">Según las recetas de los pedidos con tareas pendientes.</span></div>
+      ${txtLista ? '<button class="btn btn-secondary btn-sm" id="copiarLista">Copiar lista de compras</button>' : ''}</div>
+    ${compras.length ? `<table class="det"><thead><tr><th>Ingrediente</th><th>Se necesita</th><th>Tienes</th><th>Comprar</th><th style="text-align:right">Costo aprox.</th></tr></thead><tbody>
+      ${compras.map(x => `<tr><td>${esc(x.i.nombre)}</td><td class="num">${fmtCant(x.cant, x.i.unidad)}</td><td class="num muted">${x.tiene ? fmtCant(x.tiene, x.i.unidad) : '—'}</td><td class="num"><b>${x.falta > 0 ? fmtCant(x.falta, x.i.unidad) : '✓'}</b></td><td class="num" style="text-align:right">${x.falta > 0 ? money(x.costo) : ''}</td></tr>`).join('')}
+      <tr><td colspan="4"><b>Total aproximado</b></td><td class="num" style="text-align:right"><b>${money(compras.reduce((a, x) => a + x.costo, 0))}</b></td></tr></tbody></table>
+      <p class="sug" style="margin-top:8px">"Tienes" usa la existencia de cada insumo; cuando se registren compras y consumos se descontará solo.</p>`
+    : '<p class="muted small" style="margin:0">No hay horneados ni preparaciones pendientes esta semana.</p>'}
+  </section>`;
+  document.querySelectorAll('[data-sem]').forEach(b => b.onclick = () => { const n = Number(b.dataset.sem); S.semana = n ? sumarDias(ini, n) : lunesDe(hoyISO()); renderCalendario(); });
+  document.querySelectorAll('[data-tid]').forEach(cb => cb.onchange = async () => {
+    const est = cb.checked ? 'completado' : 'pendiente';
+    try { await api.estadoTarea(cb.dataset.tid, est); renderCalendario(); } catch (x) { cb.checked = !cb.checked; toast('err', 'No se pudo actualizar.', x.message); }
+  });
+  const cl = $('#copiarLista'); if (cl) cl.onclick = async () => { try { await navigator.clipboard.writeText(`Lista de compras (${fechaCorta(ini)} al ${fechaCorta(fin)})\n${txtLista}`); toast('ok', 'Lista copiada.', 'Pégala en WhatsApp o en tus notas.'); } catch { toast('err', 'No se pudo copiar.', ''); } };
+}
+
+/* ===== Empaques ===== */
+function renderEmpaques() {
+  const lista = S.empaques;
+  $('#app').innerHTML = `
+  <div class="head"><div><span class="muted small">${lista.length} empaque${lista.length === 1 ? '' : 's'}</span><h1>Empaques</h1></div>
+    <button class="btn btn-primary" id="btnNuevoEmp">+ Nuevo empaque</button></div>
+  ${lista.length ? `<div class="grid-cards">${lista.map(e => `
+    <button class="card card-foto" data-eid="${esc(e.id)}">
+      ${fotoHtml(S.fotos[e.foto_path], e.nombre, 'cfoto')}
+      <div class="card-body">
+        <div class="card-top"><h3>${esc(e.nombre)}</h3><b class="num" style="font-size:18px;color:var(--olive-strong)">${money(e.precio)}</b></div>
+        ${e.descripcion ? `<span class="muted small">${esc(e.descripcion)}</span>` : ''}
+      </div>
+    </button>`).join('')}</div>`
+  : '<div class="empty">Registra tus cajas, bases y bolsas con su precio para elegirlas al cotizar.</div>'}`;
+  $('#btnNuevoEmp').onclick = async () => { if (await editarEmpaque(null)) renderEmpaques(); };
+  document.querySelectorAll('[data-eid]').forEach(b => b.onclick = async () => { if (await editarEmpaque(S.empaques.find(x => x.id === b.dataset.eid))) renderEmpaques(); });
+}
+async function editarEmpaque(emp) {
+  let blob = null, preview = null, quitar = false;
+  const p = abrirModal(emp ? 'Editar empaque' : 'Nuevo empaque', `
+    <div class="pz-top" style="grid-template-columns:120px minmax(0,1fr)">
+      <div class="foto-box" id="empFoto"></div>
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div class="field"><label for="emNombre">Nombre</label><div class="inp"><input id="emNombre" value="${esc(emp?.nombre || '')}" placeholder="Ej. Caja 25 cm con ventana"></div></div>
+        <div class="field"><label for="emPrecio">Precio</label><div class="inp"><span class="affix">$</span><input id="emPrecio" inputmode="decimal" value="${esc(emp?.precio ?? '')}" placeholder="0.00"></div></div>
+      </div>
+    </div>
+    <div class="field"><label for="emDesc">Descripción <span class="muted" style="font-weight:400">(opcional)</span></label><div class="inp"><textarea id="emDesc" placeholder="Medidas, color, material…">${esc(emp?.descripcion || '')}</textarea></div></div>
+    ${emp ? '<button type="button" class="btn btn-danger btn-sm" id="emBorrar" style="align-self:flex-start">Eliminar empaque</button>' : ''}`, emp ? 'Guardar cambios' : 'Guardar empaque');
+  const form = abrirModal.ultimo;
+  const pintaFoto = () => {
+    const url = preview || (!quitar && emp && S.fotos[emp.foto_path]) || null;
+    form.querySelector('#empFoto').innerHTML = `<label class="foto-drop" for="emFotoIn" style="width:120px;height:120px">${url ? `<img src="${esc(url)}" alt="">` : '<span class="foto-ph"><b>+ Foto</b><small>opcional</small></span>'}</label>
+      <input type="file" id="emFotoIn" accept="image/*" hidden>${url ? '<button type="button" class="btn btn-ghost btn-sm" id="emQuitar">Quitar foto</button>' : ''}`;
+    form.querySelector('#emFotoIn').onchange = async ev => { const f = ev.target.files[0]; if (!f) return; try { blob = await reducirImagen(f); preview = URL.createObjectURL(blob); quitar = false; pintaFoto(); } catch { form.error('No se pudo usar esa imagen.'); } };
+    const q = form.querySelector('#emQuitar'); if (q) q.onclick = () => { blob = null; preview = null; quitar = true; pintaFoto(); };
+  };
+  pintaFoto();
+  const b = form.querySelector('#emBorrar');
+  if (b) b.onclick = async () => {
+    if (!confirm(`¿Eliminar el empaque "${emp.nombre}"?`)) return;
+    try { await api.borrarEmpaque(emp.id); if (emp.foto_path) api.borrarFoto(emp.foto_path).catch(() => {}); S.empaques = S.empaques.filter(x => x.id !== emp.id); toast('ok', 'Empaque eliminado.', ''); form.cerrar(true); }
+    catch (x) { form.error(x.message); }
+  };
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const nombre = form.querySelector('#emNombre').value.trim(), precio = num(form.querySelector('#emPrecio').value), descripcion = form.querySelector('#emDesc').value.trim() || null;
+    if (!nombre) return form.error('Escribe el nombre del empaque.');
+    if (!(precio >= 0) || precio == null) return form.error('Escribe el precio del empaque.');
+    const btn = form.querySelector('[type=submit]'); btn.disabled = true;
+    try {
+      let e = await api.guardarEmpaque({ id: emp?.id, nombre, precio, descripcion });
+      const anterior = emp?.foto_path;
+      if (blob) { const path = await api.subirFoto('empaque-' + e.id, blob); e = await api.guardarEmpaque({ id: e.id, foto_path: path }); S.fotos[path] = preview; if (anterior && anterior !== path) api.borrarFoto(anterior).catch(() => {}); }
+      else if (quitar && anterior) { e = await api.guardarEmpaque({ id: e.id, foto_path: null }); api.borrarFoto(anterior).catch(() => {}); }
+      const i = S.empaques.findIndex(x => x.id === e.id); if (i >= 0) S.empaques[i] = e; else S.empaques.push(e);
+      S.empaques.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      toast('ok', 'Empaque guardado.', `${nombre} · ${money(precio)}`); form.cerrar(e);
+    } catch (x) { form.error(x.message); btn.disabled = false; }
+  };
+  return p;
+}
+
+/* ===== Cotización en curso ===== */
+const llaveBorrador = () => 'recetario.borrador.' + (DEMO ? 'demo' : (S.user?.email || ''));
+function guardarBorrador() { try { if (S.cot) localStorage.setItem(llaveBorrador(), JSON.stringify(S.cot)); } catch {} }
+function borrarBorrador() { S.cot = null; try { localStorage.removeItem(llaveBorrador()); } catch {} }
+function leerBorrador() { try { const v = localStorage.getItem(llaveBorrador()); return v ? JSON.parse(v) : null; } catch { return null; } }
+function crearDesdeCot(kind, tipo) {
+  S.retornoCot = { kind, tipo }; guardarBorrador();
+  if (kind === 'pieza') S.filtroP = tipo; else S.filtroR = tipo;
+  openEditor(null, kind);
+}
+async function volverACot(r) {
+  const ret = S.retornoCot; S.retornoCot = null;
+  $('#app').innerHTML = '<p class="muted">Cargando…</p>';
+  await loadRecetas();
+  if (r && ret && S.cot) {
+    const nueva = S.recetas.find(x => x.receta_id === r.id);
+    if (nueva && ret.kind === 'pieza' && ES_PIEZA(nueva.tipo)) {
+      S.cot.piezas[nueva.receta_id] = { qty: 1, modalidad: nueva.se_renta ? 'renta' : 'venta' };
+      S.cot.paso = nueva.tipo === 'topper' ? 4 : 5;
+    } else if (nueva && ['bizcocho', 'relleno', 'betun'].includes(nueva.tipo)) {
+      S.cot[nueva.tipo] = nueva.receta_id; S.cot.paso = ['bizcocho', 'relleno', 'betun'].indexOf(nueva.tipo) + 1;
+    }
+  }
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.view === 'cotizaciones'));
+  renderCotizador(); window.scrollTo(0, 0);
+}
+function avisoBorrador() {
+  if (!S.cot) return '';
+  const Q = S.cot;
+  return `<div class="note note-warn aviso-cot"><b>Cotización sin guardar.</b><span>${esc(Q.producto || 'Pastel')} · paso ${Q.paso + 1} de ${PASOS.length}.
+    <a href="#" data-continuar>Continuar</a> · <a href="#" data-descartar>Descartar</a></span></div>`;
+}
+function bindAvisoBorrador() {
+  const c = document.querySelector('[data-continuar]'); if (c) c.onclick = ev => { ev.preventDefault(); document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.view === 'cotizaciones')); renderCotizador(); };
+  const d = document.querySelector('[data-descartar]'); if (d) d.onclick = ev => { ev.preventDefault(); if (!confirm('¿Descartar la cotización sin guardar?')) return; borrarBorrador(); go(S.view); };
+}
+
+/* ===== Configuración ===== */
+function renderConfig() {
+  const campo = (id, lbl, val, pre, suf, ayuda) => `<div class="field"><label for="${id}">${lbl}</label><div class="inp">${pre ? `<span class="affix">${pre}</span>` : ''}<input id="${id}" inputmode="decimal" value="${esc(val ?? '')}">${suf ? `<span class="affix">${suf}</span>` : ''}</div>${ayuda ? `<span class="sug">${ayuda}</span>` : ''}</div>`;
+  $('#app').innerHTML = `
+  <div class="head"><div><h1>Configuración</h1></div><button class="btn btn-primary" id="cfgGuardar">Guardar</button></div>
+  <div class="cfg">
+    <section class="panel"><h2>Precio de los pasteles</h2>
+      <div class="cfg-grid">
+        ${campo('cfTarifa', 'Mano de obra por hora', CFG.tarifa_mano_obra_hora, '$', 'por hora', 'En cada cotización se ponen las horas de trabajo.')}
+        ${campo('cfMargen', 'Ganancia', CFG.margen_default, '', '% del precio', 'Se propone en cada cotización nueva; ahí se puede cambiar.')}
+        ${campo('cfIndir', 'Gastos indirectos', CFG.pct_indirectos, '', '%', 'Gas, luz y desgaste de moldes, como % del costo de ingredientes.')}
+        ${campo('cfRed', 'Redondear precios a', CFG.redondeo, '$', '', 'El precio sugerido se redondea hacia arriba a este múltiplo.')}
+      </div></section>
+    <section class="panel"><h2>Toppers y decoración</h2>
+      <div class="cfg-grid">
+        ${campo('cfVenta', 'Precio de venta de una pieza', CFG.pct_venta_pieza, 'costo +', '%')}
+        ${campo('cfRenta', 'Renta de una pieza', CFG.pct_renta, '', '% del costo')}
+        ${campo('cfDep', 'Depósito', CFG.pct_deposito, '', '% del costo')}
+        ${campo('cfDias', 'Días para devolver', CFG.dias_devolucion, '', 'días')}
+      </div></section>
+    <section class="panel"><h2>Moldes</h2>
+      <p class="muted small" style="margin:0 0 12px">Qué porciones salen de cada molde. El cotizador lo usa para sugerir el tamaño.</p>
+      <div class="cfg-moldes">${[...S.moldes].sort((a, b) => a.diametro_cm - b.diametro_cm).map(m => `<span class="pill pill-ok">${fmtN(m.diametro_cm)} cm · ${m.porciones_min}–${m.porciones_max} porc.</span>`).join('') || '<span class="muted small">Sin moldes</span>'}</div>
+      <button class="btn btn-secondary btn-sm" id="cfgMoldes" style="margin-top:12px">Editar tabla de moldes</button></section>
+  </div>`;
+  $('#cfgMoldes').onclick = async () => { await editarMoldes(); renderConfig(); };
+  $('#cfgGuardar').onclick = async ev => {
+    const v = id => num($('#' + id).value);
+    const datos = { tarifa_mano_obra_hora: v('cfTarifa'), margen_default: v('cfMargen'), pct_indirectos: v('cfIndir'), redondeo: v('cfRed'),
+      pct_venta_pieza: v('cfVenta'), pct_renta: v('cfRenta'), pct_deposito: v('cfDep'), dias_devolucion: v('cfDias') };
+    const malo = Object.entries(datos).find(([, x]) => x == null || x < 0);
+    if (malo) { toast('err', 'Falta un dato.', 'Revisa que todos los campos tengan un número.'); return; }
+    if (datos.margen_default >= 90) { toast('err', 'Ganancia muy alta.', 'La ganancia debe ser menor a 90% del precio.'); return; }
+    if (!(datos.redondeo > 0)) datos.redondeo = 1;
+    datos.dias_devolucion = Math.round(datos.dias_devolucion);
+    ev.target.disabled = true;
+    try { const c = await api.guardarConfig(datos); CFG = { ...CFG, ...datos, ...(c || {}) }; toast('ok', 'Configuración guardada.', 'Se usa en las cotizaciones nuevas.'); }
+    catch (x) { toast('err', 'No se pudo guardar.', x.message); }
+    ev.target.disabled = false;
+  };
+}
+
+/* ===== Navegación ===== */
+const CATALOGO = { recetas: 'Recetas', piezas: 'Toppers y decoración', empaques: 'Empaques', insumos: 'Insumos' };
+async function go(view) {
+  if (view === 'catalogo') view = S.ultimoCat || 'recetas';
+  if (CATALOGO[view]) S.ultimoCat = view;
+  S.view = view; S.retornoCot = null;
+  const principal = CATALOGO[view] ? 'catalogo' : view;
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.view === principal));
+  $('#app').innerHTML = '<p class="muted">Cargando…</p>';
+  try {
+    await loadRecetas();
+    if (view === 'cotizaciones') { S.cotizaciones = await api.cotizaciones(); renderCotizaciones(); }
+    else if (view === 'config') renderConfig();
+    else if (view === 'empaques') renderEmpaques();
+    else if (view === 'clientes') renderClientes();
+    else if (view === 'pedidos') { S.pedidos = await api.pedidos(); renderPedidos(); }
+    else if (view === 'calendario') await renderCalendario();
+    else view === 'insumos' ? renderInsumos() : view === 'piezas' ? renderPiezas() : renderRecetas();
+    if (CATALOGO[view]) {
+      $('#app').insertAdjacentHTML('afterbegin', `<nav class="subnav">${Object.entries(CATALOGO).map(([k, v]) => `<button class="subtab" data-sub="${k}" aria-current="${k === view}">${v}</button>`).join('')}</nav>`);
+      document.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => go(b.dataset.sub));
+    }
+    if (S.cot) { $('#app').insertAdjacentHTML('afterbegin', avisoBorrador()); bindAvisoBorrador(); }
+  } catch (x) {
+    $('#app').innerHTML = `<div class="note note-err" role="alert"><b>No se pudo cargar.</b><span>${esc(x.message)}</span></div>`;
+  }
+  window.scrollTo(0, 0);
+}
+function start() {
+  $('#topbar').hidden = false;
+  $('#userEmail').textContent = (DEMO ? 'Demostración · ' : '') + (S.user?.email || '');
+  if (!S.cot) S.cot = leerBorrador();
+  if (S.cot) { S.cot.empaques = S.cot.empaques || {}; S.cot.piezas = S.cot.piezas || {}; }
+  go('cotizaciones');
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => go(t.dataset.view));
+$('#btnConfig').onclick = () => go('config');
+$('#btnSalir').onclick = async () => { await api.signOut(); S.user = null; renderLogin(); };
+(async () => {
+  if (!DEMO && !window.supabase) { $('#app').innerHTML = '<div class="note note-err"><b>Sin conexión.</b><span>No se pudo cargar la librería de Supabase. Revisa tu internet y recarga.</span></div>'; return; }
+  S.user = await api.session();
+  S.user ? start() : renderLogin();
+})();
+</script>
+</body>
+</html>
