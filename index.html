@@ -246,6 +246,7 @@ h2{margin:0;font:600 20px/26px var(--font-sans)}
 .tarea.hecha{opacity:.55}.tarea.hecha b{text-decoration:line-through}
 @media (max-width:1100px){.cal{grid-template-columns:minmax(0,1fr)}.cal-dia{min-height:0}}
 @media (max-width:700px){.ped{grid-template-columns:60px minmax(0,1fr)}.ped-acc{grid-column:1/-1;min-width:0}.res-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.login-links{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:14px}.login-links a{color:var(--olive-strong);font-weight:600}
 .aviso-cot{margin-bottom:16px}.aviso-cot a{color:var(--caramel-strong);font-weight:700}
 .ins-nombre{appearance:none;border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
 .ins-edit{font-size:12px;font-weight:600;color:var(--olive-strong);text-decoration:underline;margin-left:4px}
@@ -383,8 +384,16 @@ function supabaseApi() {
   const ok = ({ data, error }) => { if (error) throw new Error(error.message); return data; };
   return {
     async session() { const { data } = await sb.auth.getSession(); return data.session?.user || null; },
-    async signIn(email, password) { const { data, error } = await sb.auth.signInWithPassword({ email, password }); if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos' : error.message); return data.user; },
+    async signIn(email, password) { const { data, error } = await sb.auth.signInWithPassword({ email, password }); if (error) throw new Error(traducirAuth(error.message)); return data.user; },
     async signOut() { await sb.auth.signOut(); },
+    async signUp(email, password, nombre) {
+      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { nombre }, emailRedirectTo: location.href.split('#')[0].split('?')[0] } });
+      if (error) throw new Error(traducirAuth(error.message));
+      return { user: data.session ? data.user : null, confirmar: !data.session };
+    },
+    async recuperar(email) { const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0].split('?')[0] }); if (error) throw new Error(traducirAuth(error.message)); },
+    async cambiarPassword(password) { const { error } = await sb.auth.updateUser({ password }); if (error) throw new Error(traducirAuth(error.message)); },
+    alRecuperar(cb) { sb.auth.onAuthStateChange(ev => { if (ev === 'PASSWORD_RECOVERY') cb(); }); },
     async recetas() { return ok(await sb.from('v_costo_recetas').select('*').order('tipo').order('nombre')); },
     async receta(id) {
       const r = ok(await sb.from('recetas').select('*').eq('id', id).single());
@@ -457,8 +466,13 @@ function supabaseApi() {
       const { id, ...datos } = cot;
       const c = id ? ok(await sb.from('cotizaciones').update(datos).eq('id', id).select().single())
                    : ok(await sb.from('cotizaciones').insert(datos).select().single());
-      if (id) ok(await sb.from('cotizacion_detalle').delete().eq('cotizacion_id', c.id));
-      if (lineas.length) ok(await sb.from('cotizacion_detalle').insert(lineas.map(l => ({ ...l, cotizacion_id: c.id }))));
+      try {
+        if (id) ok(await sb.from('cotizacion_detalle').delete().eq('cotizacion_id', c.id));
+        if (lineas.length) ok(await sb.from('cotizacion_detalle').insert(lineas.map(l => ({ deposito: 0, ...l, cotizacion_id: c.id })), { defaultToNull: false }));
+      } catch (x) {
+        if (!id) await sb.from('cotizaciones').delete().eq('id', c.id);   // no dejar una cotización a medias
+        throw x;
+      }
       return c;
     },
     async estadoCotizacion(id, estado) { ok(await sb.from('cotizaciones').update({ estado }).eq('id', id)); },
@@ -513,6 +527,10 @@ function demoApi() {
     async session() { return user; },
     async signIn(email) { user = { email: email || 'demo@recetario' }; return user; },
     async signOut() { user = null; },
+    async signUp(email) { user = { email }; return { user, confirmar: false }; },
+    async recuperar() {},
+    async cambiarPassword() {},
+    alRecuperar() {},
     async recetas() { return wait(vista()); },
     async receta(rid) { return wait({ ...recs.find(r => r.id === rid), lineas: lineas.filter(l => l.receta_id === rid) }); },
     async ingredientes() { return wait(ing.filter(i => i.estado !== 'inactivo').sort((a, b) => a.nombre.localeCompare(b.nombre))); },
@@ -549,7 +567,14 @@ function demoApi() {
         .forEach(([etapa, k, h]) => tars.push({ id: id(), pedido_id: x.id, etapa, fecha_programada: sumarDias(p.fecha_entrega, k), hora_programada: h, estado: 'pendiente' }));
       return wait(x);
     },
-    async actualizarPedido(pid, d) { const x = peds.find(z => z.id === pid); Object.assign(x, d); return wait(x); },
+    async actualizarPedido(pid, d) {
+      const x = peds.find(z => z.id === pid), cambia = (d.fecha_entrega && d.fecha_entrega !== x.fecha_entrega) || ('hora_entrega' in d && d.hora_entrega !== x.hora_entrega);
+      Object.assign(x, d);
+      if (cambia) { for (let i = tars.length - 1; i >= 0; i--) if (tars[i].pedido_id === pid) tars.splice(i, 1);
+        [['horneado', -4, '09:00'], ['preparacion', -2, '09:00'], ['decoracion', -1, '09:00'], ['empaque', 0, '13:00'], ['entrega', 0, x.hora_entrega || '17:00']]
+          .forEach(([etapa, k, h]) => tars.push({ id: id(), pedido_id: pid, etapa, fecha_programada: sumarDias(x.fecha_entrega, k), hora_programada: h, estado: 'pendiente' })); }
+      return wait(x);
+    },
     async tareas(a, b) { return wait(tars.filter(t => t.fecha_programada >= a && t.fecha_programada <= b).map(t => { const p = peds.find(z => z.id === t.pedido_id); return { ...t, pedidos: p ? { ...p, clientes: clis.find(c => c.id === p.cliente_id) || null } : null }; })); },
     async estadoTarea(tid, estado) { tars.find(t => t.id === tid).estado = estado; },
     async detalleDe(ids) { return wait(dets.filter(d => ids.includes(d.cotizacion_id))); },
@@ -580,24 +605,58 @@ const api = DEMO ? demoApi() : supabaseApi();
 const S = { user: null, view: 'recetas', filtroR: 'todas', filtroP: 'todas', recetas: [], ingredientes: [], unidades: [], moldes: [], clientes: [], cotizaciones: [], empaques: [], pedidos: [], fotos: {}, ed: null, cot: null };
 
 /* ===== Login ===== */
-function renderLogin(err) {
+function traducirAuth(m) {
+  const t = [[/invalid login credentials/i, 'Correo o contraseña incorrectos.'], [/already registered|already exists/i, 'Ese correo ya tiene una cuenta. Entra o recupera tu contraseña.'],
+    [/at least (\d+)/i, 'La contraseña debe tener al menos 6 caracteres.'], [/signups? not allowed|signup is disabled/i, 'El registro de usuarios nuevos está desactivado en Supabase.'],
+    [/email not confirmed/i, 'Falta confirmar tu correo: abre el enlace que te llegó.'], [/for security purposes|rate limit/i, 'Espera un minuto antes de volver a intentarlo.'],
+    [/same password|different from the old/i, 'La nueva contraseña debe ser distinta a la anterior.'], [/invalid.*email|unable to validate email/i, 'Revisa el correo; no parece válido.']];
+  const x = t.find(([r]) => r.test(m)); return x ? x[1] : m;
+}
+function renderLogin(err, modo = 'entrar', aviso = '') {
   $('#topbar').hidden = true;
+  const titulos = { entrar: 'Entrar', registro: 'Crear cuenta', recuperar: 'Recuperar contraseña', nueva: 'Nueva contraseña' };
+  const campo = (id, lbl, tipo, ac) => `<div class="field"><label for="${id}">${lbl}</label><div class="inp"><input id="${id}" type="${tipo}" autocomplete="${ac}" required></div></div>`;
+  const cuerpo = {
+    entrar: campo('lEmail', 'Correo', 'email', 'username') + `<div class="field"><label for="lPass">Contraseña</label><div class="inp"><input id="lPass" type="password" autocomplete="current-password" ${DEMO ? '' : 'required'}></div></div>`,
+    registro: `<div class="field"><label for="lNombre">Tu nombre</label><div class="inp"><input id="lNombre" autocomplete="name" required></div></div>` + campo('lEmail', 'Correo', 'email', 'username') + campo('lPass', 'Contraseña (mínimo 6 caracteres)', 'password', 'new-password') + campo('lPass2', 'Repite la contraseña', 'password', 'new-password'),
+    recuperar: `<p class="muted small" style="margin:0">Te enviaremos un enlace a tu correo para poner una contraseña nueva.</p>` + campo('lEmail', 'Correo', 'email', 'username'),
+    nueva: `<p class="muted small" style="margin:0">Escribe tu nueva contraseña.</p>` + campo('lPass', 'Nueva contraseña (mínimo 6 caracteres)', 'password', 'new-password') + campo('lPass2', 'Repite la contraseña', 'password', 'new-password')
+  }[modo];
+  const enlaces = {
+    entrar: '<a href="#" data-modo="recuperar">¿Olvidaste tu contraseña?</a><span>¿No tienes cuenta? <a href="#" data-modo="registro">Crear cuenta</a></span>',
+    registro: '<span>¿Ya tienes cuenta? <a href="#" data-modo="entrar">Entrar</a></span>',
+    recuperar: '<a href="#" data-modo="entrar">← Volver a entrar</a>', nueva: ''
+  }[modo];
   $('#app').innerHTML = `
   <div class="login">
     <p class="brandbig">Recetario</p>
     <p class="muted" style="margin:0 0 24px">Tus recetas con su costo, listas para cotizar.</p>
     <form class="panel" id="fLogin" style="display:flex;flex-direction:column;gap:16px">
       ${DEMO ? '<div class="note note-warn"><b>Modo demostración.</b><span>Los cambios no se guardan en tu base de datos.</span></div>' : ''}
-      <div class="field"><label for="lEmail">Correo</label><div class="inp"><input id="lEmail" type="email" autocomplete="username" required></div></div>
-      <div class="field"><label for="lPass">Contraseña</label><div class="inp"><input id="lPass" type="password" autocomplete="current-password" ${DEMO ? '' : 'required'}></div></div>
-      ${err ? `<div class="note note-err" role="alert"><b>No se pudo entrar.</b><span>${esc(err)}</span></div>` : ''}
-      <button class="btn btn-primary" type="submit">Entrar</button>
+      ${modo !== 'entrar' ? `<h2 style="font:600 22px/28px var(--font-display);margin:0">${titulos[modo]}</h2>` : ''}
+      ${cuerpo}
+      ${aviso ? `<div class="note note-ok" role="status"><b>Listo.</b><span>${esc(aviso)}</span></div>` : ''}
+      ${err ? `<div class="note note-err" role="alert"><b>No se pudo.</b><span>${esc(err)}</span></div>` : ''}
+      <button class="btn btn-primary" type="submit">${{ entrar: 'Entrar', registro: 'Crear cuenta', recuperar: 'Enviar enlace', nueva: 'Guardar contraseña' }[modo]}</button>
+      ${enlaces ? `<div class="login-links">${enlaces}</div>` : ''}
     </form>
   </div>`;
+  document.querySelectorAll('[data-modo]').forEach(a => a.onclick = ev => { ev.preventDefault(); renderLogin(null, a.dataset.modo); });
+  const v = id => ($('#' + id)?.value || '');
   $('#fLogin').onsubmit = async e => {
     e.preventDefault(); const b = e.submitter; b.disabled = true;
-    try { S.user = await api.signIn($('#lEmail').value.trim(), $('#lPass').value); start(); }
-    catch (x) { renderLogin(x.message); }
+    try {
+      if (modo === 'entrar') { S.user = await api.signIn(v('lEmail').trim(), v('lPass')); start(); return; }
+      if ((modo === 'registro' || modo === 'nueva') && v('lPass') !== v('lPass2')) throw new Error('Las dos contraseñas no coinciden.');
+      if ((modo === 'registro' || modo === 'nueva') && v('lPass').length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres.');
+      if (modo === 'registro') {
+        const r = await api.signUp(v('lEmail').trim(), v('lPass'), v('lNombre').trim());
+        if (r.user) { S.user = r.user; start(); } else renderLogin(null, 'entrar', `Te enviamos un correo a ${v('lEmail').trim()}. Abre el enlace para confirmar tu cuenta y luego entra.`);
+        return;
+      }
+      if (modo === 'recuperar') { await api.recuperar(v('lEmail').trim()); renderLogin(null, 'recuperar', 'Si el correo tiene cuenta, te llegará un enlace en unos minutos. Revisa también spam.'); return; }
+      if (modo === 'nueva') { await api.cambiarPassword(v('lPass')); history.replaceState(null, '', location.pathname + location.search); S.user = await api.session(); toast('ok', 'Contraseña actualizada.', 'Ya puedes usarla para entrar.'); S.user ? start() : renderLogin(); }
+    } catch (x) { renderLogin(traducirAuth(x.message), modo); }
   };
 }
 
@@ -1842,6 +1901,39 @@ async function crearPedido(c) {
   };
   return p;
 }
+async function editarPedido(ped) {
+  const tipos = ['Recoge en tienda', 'Envío a domicilio'];
+  if (ped.tipo_entrega && !tipos.includes(ped.tipo_entrega)) tipos.push(ped.tipo_entrega);
+  const p = abrirModal('Editar pedido', `
+    <p class="muted small" style="margin:-6px 0 0">${esc(ped.producto)} · ${money(ped.precio_venta)}</p>
+    <div class="modal-grid">
+      <div class="field"><label for="peFecha">Fecha de entrega</label><div class="inp"><input id="peFecha" type="date" value="${esc(ped.fecha_entrega || '')}"></div></div>
+      <div class="field"><label for="peHora">Hora</label><div class="inp"><input id="peHora" type="time" value="${esc((ped.hora_entrega || '').slice(0, 5))}"></div></div>
+    </div>
+    <div class="modal-grid">
+      <div class="field"><label for="peTipo">Entrega</label><div class="inp"><select id="peTipo">${tipos.map(t => `<option ${t === ped.tipo_entrega ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></div></div>
+      <div class="field"><label for="peAnt">Anticipo recibido</label><div class="inp"><span class="affix">$</span><input id="peAnt" inputmode="decimal" value="${Number(ped.anticipo) ? esc(ped.anticipo) : ''}" placeholder="0.00"></div></div>
+    </div>
+    <div class="field"><label for="peLugar">Lugar de entrega</label><div class="inp"><input id="peLugar" value="${esc(ped.lugar_entrega || '')}"></div></div>
+    <div class="field"><label for="peNotas">Notas</label><div class="inp"><textarea id="peNotas">${esc(ped.notas || '')}</textarea></div></div>
+    <p class="sug" style="margin:0">Si cambias la fecha o la hora, las tareas del calendario se vuelven a programar con la nueva fecha y quedan como pendientes.</p>`, 'Guardar cambios');
+  const form = abrirModal.ultimo;
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const fecha = form.querySelector('#peFecha').value;
+    if (!fecha) return form.error('Elige la fecha de entrega.');
+    const datos = { fecha_entrega: fecha, hora_entrega: form.querySelector('#peHora').value || null, tipo_entrega: form.querySelector('#peTipo').value,
+      anticipo: num(form.querySelector('#peAnt').value) || 0, lugar_entrega: form.querySelector('#peLugar').value.trim() || null, notas: form.querySelector('#peNotas').value.trim() || null };
+    if (Number(ped.deposito) && fecha !== ped.fecha_entrega) datos.fecha_limite_devolucion = sumarDias(fecha, Number(CFG.dias_devolucion) || 3);
+    if (Number(datos.anticipo) > Number(ped.precio_venta)) return form.error('El anticipo es mayor que el precio del pedido.');
+    try {
+      const r = await api.actualizarPedido(ped.id, datos);
+      toast('ok', 'Pedido actualizado.', fecha !== ped.fecha_entrega ? `Nueva entrega: ${fechaLarga(fecha)}. El calendario ya se ajustó.` : '');
+      form.cerrar(r);
+    } catch (x) { form.error(x.message); }
+  };
+  return p;
+}
 function renderPedidos() {
   const ver = S.verPed || 'proximos', hoy = hoyISO();
   const lista = S.pedidos.filter(p => ver === 'todos' || (p.estado !== 'entregado' && p.estado !== 'cancelado') || p.devolucion_estado === 'pendiente')
@@ -1857,7 +1949,7 @@ function renderPedidos() {
       <div class="ped-acc">
         <div class="inp"><select data-estado>${Object.entries(ESTADOS_PED).map(([k, v]) => `<option value="${k}" ${k === p.estado ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
         ${Number(p.deposito) ? `<div class="inp"><select data-devol>${Object.entries(DEVOL).filter(([k]) => k !== 'no_aplica').map(([k, v]) => `<option value="${k}" ${k === p.devolucion_estado ? 'selected' : ''}>${v}${k === 'pendiente' && p.fecha_limite_devolucion ? ' (antes del ' + fechaCorta(p.fecha_limite_devolucion) + ')' : ''}</option>`).join('')}</select></div>` : ''}
-        ${p.cotizacion_id ? '<button class="btn btn-ghost btn-sm" data-vercot>Ver cotización</button>' : ''}
+        <div style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" data-editped style="flex:1">Editar</button>${p.cotizacion_id ? '<button class="btn btn-ghost btn-sm" data-vercot style="flex:1">Ver cotización</button>' : ''}</div>
       </div>
     </div>`; }).join('')}</div>`
   : '<div class="empty">No hay pedidos por entregar. Se crean desde una cotización con "Convertir en pedido".</div>'}`;
@@ -1867,6 +1959,7 @@ function renderPedidos() {
     row.querySelector('[data-estado]').onchange = async ev => { try { await api.actualizarPedido(p.id, { estado: ev.target.value }); p.estado = ev.target.value; toast('ok', 'Pedido actualizado.', ESTADOS_PED[p.estado]); } catch (x) { toast('err', 'No se pudo actualizar.', x.message); } };
     const d = row.querySelector('[data-devol]'); if (d) d.onchange = async ev => { const v = ev.target.value; try { await api.actualizarPedido(p.id, { devolucion_estado: v, fecha_devolucion: v === 'devuelta' ? hoyISO() : null }); p.devolucion_estado = v; toast('ok', 'Actualizado.', DEVOL[v]); } catch (x) { toast('err', 'No se pudo actualizar.', x.message); } };
     const vc = row.querySelector('[data-vercot]'); if (vc) vc.onclick = () => verCotizacion(p.cotizacion_id);
+    row.querySelector('[data-editped]').onclick = async () => { if (await editarPedido(p)) { S.pedidos = await api.pedidos(); renderPedidos(); } };
   });
 }
 
@@ -2048,12 +2141,28 @@ function renderConfig() {
         ${campo('cfDep', 'Depósito', CFG.pct_deposito, '', '% del costo')}
         ${campo('cfDias', 'Días para devolver', CFG.dias_devolucion, '', 'días')}
       </div></section>
+    <section class="panel"><h2>Mi cuenta</h2>
+      <p class="muted small" style="margin:0 0 12px">Entraste como ${esc(S.user?.email || '')}.</p>
+      <div class="cfg-grid">
+        <div class="field"><label for="cfPass">Nueva contraseña</label><div class="inp"><input id="cfPass" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></div></div>
+        <div class="field"><label for="cfPass2">Repite la contraseña</label><div class="inp"><input id="cfPass2" type="password" autocomplete="new-password"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="cfgPass" style="margin-top:12px">Cambiar contraseña</button></section>
     <section class="panel"><h2>Moldes</h2>
       <p class="muted small" style="margin:0 0 12px">Qué porciones salen de cada molde. El cotizador lo usa para sugerir el tamaño.</p>
       <div class="cfg-moldes">${[...S.moldes].sort((a, b) => a.diametro_cm - b.diametro_cm).map(m => `<span class="pill pill-ok">${fmtN(m.diametro_cm)} cm · ${m.porciones_min}–${m.porciones_max} porc.</span>`).join('') || '<span class="muted small">Sin moldes</span>'}</div>
       <button class="btn btn-secondary btn-sm" id="cfgMoldes" style="margin-top:12px">Editar tabla de moldes</button></section>
   </div>`;
   $('#cfgMoldes').onclick = async () => { await editarMoldes(); renderConfig(); };
+  $('#cfgPass').onclick = async ev => {
+    const a = $('#cfPass').value, b = $('#cfPass2').value;
+    if (a.length < 6) return toast('err', 'Contraseña muy corta.', 'Debe tener al menos 6 caracteres.');
+    if (a !== b) return toast('err', 'No coinciden.', 'Escribe la misma contraseña en los dos campos.');
+    ev.target.disabled = true;
+    try { await api.cambiarPassword(a); $('#cfPass').value = ''; $('#cfPass2').value = ''; toast('ok', 'Contraseña cambiada.', 'Úsala la próxima vez que entres.'); }
+    catch (x) { toast('err', 'No se pudo cambiar.', traducirAuth(x.message)); }
+    ev.target.disabled = false;
+  };
   $('#cfgGuardar').onclick = async ev => {
     const v = id => num($('#' + id).value);
     const datos = { tarifa_mano_obra_hora: v('cfTarifa'), margen_default: v('cfMargen'), pct_indirectos: v('cfIndir'), redondeo: v('cfRed'),
@@ -2110,7 +2219,10 @@ $('#btnConfig').onclick = () => go('config');
 $('#btnSalir').onclick = async () => { await api.signOut(); S.user = null; renderLogin(); };
 (async () => {
   if (!DEMO && !window.supabase) { $('#app').innerHTML = '<div class="note note-err"><b>Sin conexión.</b><span>No se pudo cargar la librería de Supabase. Revisa tu internet y recarga.</span></div>'; return; }
+  const recuperando = /type=recovery/.test(location.hash);
+  api.alRecuperar(() => renderLogin(null, 'nueva'));
   S.user = await api.session();
+  if (recuperando && S.user) return renderLogin(null, 'nueva');
   S.user ? start() : renderLogin();
 })();
 </script>
